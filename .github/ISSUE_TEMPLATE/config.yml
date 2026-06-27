@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Base shell / theming bug
+    url: https://github.com/end-4/dots-hyprland/issues
+    about: This repo forks illogical-impulse. Bugs in the base belong upstream.
+  - name: Quickshell question
+    url: https://quickshell.org/docs/
+    about: For questions about the shell toolkit itself.

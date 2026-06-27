@@ -1,0 +1,38 @@
+name: Bug report
+description: Something in the added widgets is broken
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        This repo is a fork of [illogical-impulse](https://github.com/end-4/dots-hyprland). If the bug
+        is in the base shell or theming (not one of the widgets listed in the README), report it
+        upstream instead — you'll get a faster fix there.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you got.
+    validations:
+      required: true
+  - type: input
+    id: feature
+    attributes:
+      label: Which widget
+      placeholder: e.g. printer pill, NAS guard, news reader
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Distro, Hyprland version, Quickshell version, commit (`git rev-parse --short HEAD`).
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output
+      description: "From `qs ipc --pid $(pgrep -x qs) call <target> status`, or the shell log."
+      render: shell

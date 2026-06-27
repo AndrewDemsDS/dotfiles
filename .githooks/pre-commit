@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Pre-commit gate: qmllint every staged Quickshell .qml file.
+# qmllint exits 0 on clean files (it resolves qs.*/Quickshell.* imports) and
+# non-zero on syntax/parse errors — so this blocks broken QML before it can
+# hot-reload the live shell. Skip with `git commit --no-verify` if ever needed.
+set -euo pipefail
+
+mapfile -t files < <(git diff --cached --name-only --diff-filter=ACM | grep -E '^quickshell/.*\.qml$' || true)
+[[ ${#files[@]} -eq 0 ]] && exit 0
+
+command -v qmllint >/dev/null || { echo "pre-commit: qmllint not found; skipping"; exit 0; }
+
+fail=0
+for f in "${files[@]}"; do
+  [[ -f "$f" ]] || continue
+  # qmllint emits diagnostics for real problems. Some large valid files exit non-zero
+  # with NO output (a qmllint quirk) — so gate on diagnostic TEXT, not exit code alone.
+  out="$(qmllint "$f" 2>&1 || true)"
+  if [[ -n "${out//[[:space:]]/}" ]]; then
+    echo "✗ qmllint: $f"
+    echo "$out" | sed 's/^/    /'
+    fail=1
+  fi
+done
+
+if [[ $fail -ne 0 ]]; then
+  echo "pre-commit: QML lint errors — commit blocked. Fix, or bypass with --no-verify."
+  exit 1
+fi
+echo "pre-commit: qmllint clean (${#files[@]} file(s))"

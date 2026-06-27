@@ -1,0 +1,27 @@
+# Extra system packages this config's CUSTOM features need, beyond the base
+# illogical-impulse dots. One package per line. Lines starting with '#' are comments.
+# Install with: `just deps`  (see setup/install-deps.sh).
+#
+# CONVENTION: any feature that shells out to a system tool MUST add its package here
+# (and note pip/venv deps as a comment), so a fresh clone is reproducible.
+
+# --- core feature deps (pacman) ---
+cups                    # printer integration (lpstat / lp / cancel / lpoptions)
+system-config-printer   # printer settings GUI (Printer dialog "Printer settings" button)
+ydotool                 # testing harness: just test-ui input simulation
+grim                    # screenshots (test-ui / visual verification)
+slurp                   # region select (pairs with grim)
+wl-clipboard            # wl-copy / wl-paste — recon + local-LLM + print-clipboard
+jq                      # misc JSON in helper scripts
+
+# --- optional: security / recon launcher (Super+Alt+P). AUR / BlackArch ---
+# (skip these on a plain clone if you don't use the recon launcher)
+nuclei                  # AUR
+whatweb
+ffuf
+nmap
+
+# --- pip, installed in their OWN venvs (NOT system packages) ---
+# trafilatura[all]  -> ~/.local/state/quickshell/reader-venv   (news article reader)
+#   python -m venv ~/.local/state/quickshell/reader-venv
+#   ~/.local/state/quickshell/reader-venv/bin/pip install 'trafilatura[all]'

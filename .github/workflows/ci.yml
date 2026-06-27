@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    name: Shell scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: |
+          SUDO=""; [ "$(id -u)" -ne 0 ] && SUDO=sudo
+          $SUDO apt-get update -qq && $SUDO apt-get install -y -qq shellcheck
+      - name: Run shellcheck
+        run: |
+          # Only the scripts this fork maintains. Upstream (illogical-impulse) scripts aren't ours to fix.
+          mapfile -t files < <(git ls-files 'setup/*.sh' 'quickshell/ii/scripts/dev/*.sh' 'quickshell/ii/scripts/news/*.sh')
+          [ ${#files[@]} -eq 0 ] && { echo "no scripts to check"; exit 0; }
+          # SC1091: don't follow sourced files; SC2155: allow declare+assign.
+          shellcheck -S warning -e SC1091,SC2155 "${files[@]}"
+
+  lua:
+    name: Lua syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install lua
+        run: |
+          SUDO=""; [ "$(id -u)" -ne 0 ] && SUDO=sudo
+          $SUDO apt-get update -qq && $SUDO apt-get install -y -qq lua5.4
+      - name: luac -p
+        run: |
+          fail=0
+          while IFS= read -r f; do
+            luac5.4 -p "$f" || { echo "::error file=$f::lua syntax error"; fail=1; }
+          done < <(git ls-files '*.lua')
+          exit $fail
+
+  qml:
+    name: QML syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install qmllint
+        run: |
+          SUDO=""; [ "$(id -u)" -ne 0 ] && SUDO=sudo
+          $SUDO apt-get update -qq && $SUDO apt-get install -y -qq qt6-declarative-dev
+      - name: qmllint (syntax only)
+        run: |
+          QMLLINT="$(command -v qmllint || echo /usr/lib/qt6/bin/qmllint)"
+          # Quickshell types can't resolve in CI (no qmltypes), so import warnings are expected and
+          # ignored. We fail only on genuine parser/syntax errors.
+          fail=0
+          while IFS= read -r f; do
+            out="$("$QMLLINT" "$f" 2>&1 || true)"
+            if echo "$out" | grep -qiE "Expected token|Unexpected token|Syntax error|Unterminated|Expected '"; then
+              echo "::error file=$f::$(echo "$out" | grep -iE 'Expected token|Unexpected token|Syntax error|Unterminated' | head -1)"
+              fail=1
+            fi
+          done < <(git ls-files 'quickshell/**/*.qml')
+          exit $fail
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        run: |
+          # Portable across GitHub Actions and Gitea Actions: install the binary, scan the history.
+          VER=8.21.2
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${VER}/gitleaks_${VER}_linux_x64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          /tmp/gitleaks detect --source . --redact --no-banner --exit-code 1

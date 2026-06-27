@@ -1,0 +1,34 @@
+# Dotfiles repo — track ONLY hypr + quickshell, ignore everything else in ~/.config
+/*
+!/.gitignore
+!/hypr/
+!/quickshell/
+# Dev tooling (tracked)
+!/justfile
+!/.githooks/
+!/setup/
+
+# Release / project docs (tracked)
+!/LICENSE
+!/README.md
+!/CONTRIBUTING.md
+!/SECURITY.md
+!/CHANGELOG.md
+!/.github/
+
+# Migration/backup artifacts left by the dots installer
+hypr/*.new
+hypr/*.old
+
+# matugen-generated theme output (machine-specific, contains local paths)
+hypr/hyprlock/colors.conf
+
+# Secrets — never commit tokens (HA/MQTT/Gitea)
+quickshell/secrets/
+**/secrets/
+
+# Dev scaffolding / generated
+quickshell/ii/Harness.qml
+**/*.qmlc
+__pycache__/
+*.pyc

@@ -106,6 +106,23 @@ Singleton {
     function closeEnterprise(): void {
         root.enterpriseSsid = "";
     }
+
+    // --- Saved connection profiles ---
+    // Names of saved wifi connections, so a known network (incl. enterprise) is
+    // brought straight up instead of re-prompting for credentials.
+    property var savedWifiConns: []
+    function isSaved(ssid: string): bool {
+        return ssid.length > 0 && root.savedWifiConns.indexOf(ssid) !== -1;
+    }
+    function refreshSaved(): void {
+        savedProc.running = true;
+    }
+    // Activate an existing saved profile by SSID (uses its stored credentials).
+    function activateConnection(accessPoint: WifiAccessPoint): void {
+        accessPoint.askingPassword = false;
+        root.wifiConnectTarget = accessPoint;
+        activateProc.exec(["nmcli", "connection", "up", accessPoint.ssid]);
+    }
     // EAP enums (eap, phase2) are controlled by the dialog; identity/password/anon/CA go via env (off argv).
     function connectEnterprise(ssid, eap, phase2, identity, password, anonymous, caCert): void {
         root.closeEnterprise();
@@ -174,6 +191,41 @@ Singleton {
         }
     }
 
+    // Activate a saved profile (does NOT set askingPassword on failure — a stale
+    // saved credential should not pop the plain-password prompt).
+    Process {
+        id: activateProc
+        stdout: SplitParser {
+            onRead: getNetworks.running = true
+        }
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0 && root.wifiConnectTarget)
+                Quickshell.execDetached(["notify-send", Translation.tr("Wi-Fi"), Translation.tr("Could not activate %1").arg(root.wifiConnectTarget.ssid), "-a", "Shell", "-u", "critical"]);
+            root.wifiConnectTarget = null;
+        }
+    }
+
+    // Track saved wifi connection profiles (NAME == SSID for ones we create).
+    Process {
+        id: savedProc
+        running: true
+        command: ["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                let names = [];
+                const lines = text.trim().length > 0 ? text.trim().split("\n") : [];
+                for (const line of lines) {
+                    const idx = line.lastIndexOf(":"); // TYPE is the last field
+                    if (idx < 0)
+                        continue;
+                    if (line.slice(idx + 1) === "802-11-wireless")
+                        names.push(line.slice(0, idx));
+                }
+                root.savedWifiConns = names;
+            }
+        }
+    }
+
     Process {
         id: changePasswordProc
         onExited: { // Re-attempt connection after changing password
@@ -199,6 +251,7 @@ Singleton {
         wifiStatusProcess.running = true
         updateNetworkName.running = true;
         updateNetworkStrength.running = true;
+        savedProc.running = true; // keep the saved-profile list current
     }
 
     Process {

@@ -83,6 +83,36 @@ Singleton {
         toggleProc.running = true;
     }
 
+    // ── Auto-VPN ─────────────────────────────────────────────────────────────
+    // When enabled, keep the VPN up on untrusted networks and down on trusted
+    // (home) ones. The shell becomes the sole controller, so NM's own autoconnect
+    // for the managed connection is turned off the first time auto-VPN acts.
+    property string _autoTunedTarget: ""
+    property string _autoMsg: ""
+
+    function _applyAuto() {
+        const opt = Config.options.vpnStatus;
+        if (!opt.enable || !opt.autoConnect)
+            return;
+        const t = root.toggleTarget;
+        if (t.length === 0 || root.localIp.length === 0) // no target, or network not known yet
+            return;
+        // Stop NetworkManager from auto-raising this connection on a home network.
+        if (root._autoTunedTarget !== t) {
+            root._autoTunedTarget = t;
+            Quickshell.execDetached(["nmcli", "connection", "modify", t, "connection.autoconnect", "no"]);
+        }
+        if (root.trusted && root.vpnUp) {
+            root._autoMsg = Translation.tr("Disconnected on a trusted network");
+            autoProc.command = ["nmcli", "connection", "down", root.vpnName.length > 0 ? root.vpnName : t];
+            autoProc.running = true;
+        } else if (!root.trusted && !root.vpnUp) {
+            root._autoMsg = Translation.tr("Connected on an untrusted network");
+            autoProc.command = ["nmcli", "connection", "up", t];
+            autoProc.running = true;
+        }
+    }
+
     function _maybeFetchGeo() {
         if (!Config.options.vpnStatus.geoLookup)
             return;
@@ -169,6 +199,31 @@ Singleton {
         }
     }
 
+    // Re-evaluate auto-VPN shortly after a refresh settles, debounced so all
+    // three probe processes have reported before we decide.
+    Timer {
+        id: autoTimer
+        interval: 1500
+        repeat: false
+        onTriggered: root._applyAuto()
+    }
+
+    Process {
+        id: autoProc
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode === 0) {
+                if (root._autoMsg.length > 0)
+                    Quickshell.execDetached(["notify-send", Translation.tr("VPN"), root._autoMsg, "-a", "Shell", "-u", "low"]);
+                root._autoMsg = "";
+                root.refresh();
+            } else {
+                // Leave the retry to the next poll so a failing action can't tight-loop.
+                console.log("[VpnStatus] auto action failed:", root._autoMsg);
+                root._autoMsg = "";
+            }
+        }
+    }
+
     // ip route get → iface / gateway / local IP
     Process {
         id: routeProc
@@ -188,6 +243,8 @@ Singleton {
                     root.subnet = "";
                 }
                 root._maybeFetchGeo();
+                if (Config.options.vpnStatus.autoConnect)
+                    autoTimer.restart();
             }
         }
     }
@@ -201,7 +258,7 @@ Singleton {
             root.toggle();
         }
         function status(): string {
-            return `ssid=${root.ssid} vpn=${root.vpnUp ? root.vpnName : "down"} target=${root.toggleTarget} trusted=${root.trusted} ip=${root.localIp} pub=${root.publicIp}`;
+            return `ssid=${root.ssid} vpn=${root.vpnUp ? root.vpnName : "down"} target=${root.toggleTarget} trusted=${root.trusted} auto=${Config.options.vpnStatus.autoConnect} ip=${root.localIp} pub=${root.publicIp}`;
         }
     }
 }

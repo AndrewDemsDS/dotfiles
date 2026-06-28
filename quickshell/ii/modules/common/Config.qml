@@ -611,6 +611,7 @@ Singleton {
                 property list<string> trustedSsids: [] // SSIDs you consider safe
                 property list<string> trustedSubnets: [] // local IP prefixes, e.g. "192.168.1"
                 property string toggleConnection: "" // NM connection the quick-toggle controls; empty => auto
+                property bool autoConnect: false // auto-connect the VPN on untrusted networks, disconnect on trusted/home ones
                 property int pollSeconds: 15
             }
 

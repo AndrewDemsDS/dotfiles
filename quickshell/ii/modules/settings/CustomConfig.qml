@@ -198,6 +198,11 @@ ContentPage {
             checked: Config.options.vpnStatus.geoLookup
             onCheckedChanged: Config.options.vpnStatus.geoLookup = checked
         }
+        ConfigSwitch {
+            text: Translation.tr("Auto-connect VPN off home networks")
+            checked: Config.options.vpnStatus.autoConnect
+            onCheckedChanged: Config.options.vpnStatus.autoConnect = checked
+        }
         ConfigSpinBox {
             icon: "av_timer"
             text: Translation.tr("Poll interval (s)")

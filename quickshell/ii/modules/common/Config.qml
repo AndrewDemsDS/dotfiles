@@ -656,7 +656,7 @@ Singleton {
 
             property JsonObject netUsage: JsonObject {
             property bool enable: true // data-usage + bandwidth bar pill, parsed from /proc/net/dev
-            property string iface: "wlan0" // network interface to meter
+            property string iface: "auto" // interface to meter; "auto" = current default-route iface (Wi-Fi/Ethernet/USB tether/…), or a fixed name like "wlan0"/"eth0"
             property real monthlyCapGiB: 0 // 0 = no cap (no warn colour)
             property int warnPercent: 80 // pill turns red at this % of the monthly cap
             property int pollSeconds: 3 // /proc/net/dev sample interval

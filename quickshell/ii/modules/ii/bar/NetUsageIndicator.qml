@@ -66,7 +66,7 @@ Loader {
         StyledToolTip {
             extraVisibleCondition: pillMouse.containsMouse
             text: {
-                let lines = [Translation.tr("Network usage (%1)").arg(NetUsage.cfg.iface)];
+                let lines = [Translation.tr("Network usage (%1)").arg(NetUsage.activeIface || NetUsage.cfg.iface)];
                 lines.push(Translation.tr("Down: %1   Up: %2").arg(NetUsage.humanRate(NetUsage.rxSpeed)).arg(NetUsage.humanRate(NetUsage.txSpeed)));
                 lines.push(Translation.tr("This month: %1 ↓ / %2 ↑").arg(NetUsage.humanTotal(NetUsage.monthRxGiB)).arg(NetUsage.humanTotal(NetUsage.monthTxGiB)));
                 lines.push(Translation.tr("Total: %1").arg(NetUsage.humanTotal(NetUsage.monthTotalGiB)));

@@ -357,10 +357,13 @@ ContentPage {
         }
         MaterialTextArea {
             Layout.fillWidth: true
-            placeholderText: Translation.tr("Interface (e.g. wlan0)")
+            placeholderText: Translation.tr("Interface: \"auto\", or a name like wlan0 / eth0 / usb0")
             text: Config.options.netUsage.iface
             wrapMode: TextEdit.Wrap
             onTextChanged: Config.options.netUsage.iface = text
+            StyledToolTip {
+                text: Translation.tr("\"auto\" follows the default-route interface (Wi-Fi, Ethernet, USB tethering, …). Currently metering: %1").arg(NetUsage.activeIface || Translation.tr("none"))
+            }
         }
         ConfigSpinBox {
             icon: "data_usage"

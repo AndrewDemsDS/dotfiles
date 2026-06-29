@@ -29,6 +29,12 @@ Singleton {
     property double _lastTx: -1
     property bool _loaded: false
 
+    // The interface actually being metered. With cfg.iface == "auto" (or empty) this tracks the
+    // current default-route interface — Wi-Fi (wlan*/wlp*), Ethernet (eth*/en*), USB tethering
+    // (usb*/rndis*), or anything else carrying internet traffic. Otherwise it equals cfg.iface.
+    property string activeIface: ""
+    property string _lastIface: ""
+
     readonly property double monthRxGiB: root.monthRx / 1073741824
     readonly property double monthTxGiB: root.monthTx / 1073741824
     readonly property double monthTotalGiB: (root.monthRx + root.monthTx) / 1073741824
@@ -70,7 +76,8 @@ Singleton {
             "rx": root.monthRx,
             "tx": root.monthTx,
             "lastRx": root._lastRx,
-            "lastTx": root._lastTx
+            "lastTx": root._lastTx,
+            "iface": root._lastIface
         }));
     }
 
@@ -79,6 +86,19 @@ Singleton {
         root.monthRx = 0;
         root.monthTx = 0;
         // keep _lastRx/_lastTx so the next delta is measured from the current counter
+    }
+
+    // Point the meter at `name`. If the interface changed (Wi-Fi → Ethernet, USB tether plugged
+    // in, etc.) the per-interface byte counters are unrelated, so drop the stale baseline — the
+    // next sample re-baselines instead of registering a bogus delta.
+    function _setIface(name) {
+        if (name !== root._lastIface) {
+            root._lastRx = -1;
+            root._lastTx = -1;
+            root._lastIface = name;
+            root._save();
+        }
+        root.activeIface = name;
     }
 
     function _ingest(rawRx, rawTx) {
@@ -103,7 +123,13 @@ Singleton {
     function refresh() {
         if (!root.cfg.enable)
             return;
-        readProc.running = true;
+        const want = (root.cfg.iface || "").trim();
+        if (want === "" || want.toLowerCase() === "auto")
+            routeProc.running = true; // resolve the default-route iface, then sample it
+        else {
+            root._setIface(want);
+            readProc.running = true;
+        }
     }
 
     // Parse /proc/net/dev for the configured interface. Fields after the colon:
@@ -114,7 +140,12 @@ Singleton {
         command: ["cat", "/proc/net/dev"]
         stdout: StdioCollector {
             onStreamFinished: {
-                const iface = root.cfg.iface;
+                const iface = root.activeIface;
+                if (!iface) {
+                    root.rxSpeed = 0;
+                    root.txSpeed = 0;
+                    return;
+                }
                 for (const line of text.split("\n")) {
                     const idx = line.indexOf(":");
                     if (idx < 0)
@@ -131,6 +162,28 @@ Singleton {
                 // iface not present this tick: no speed sample
                 root.rxSpeed = 0;
                 root.txSpeed = 0;
+            }
+        }
+    }
+
+    // Auto interface resolution (cfg.iface == "auto"/empty): ask the kernel which device carries
+    // traffic to the internet. This is connection-type agnostic — it follows Wi-Fi, Ethernet, USB
+    // tethering, WWAN, etc. as they come and go, instead of a hardcoded wlan0. (Same `ip route get`
+    // trick VpnStatus uses.) On success it samples that iface; offline => no sample this tick.
+    Process {
+        id: routeProc
+        command: ["ip", "route", "get", "1.1.1.1"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const m = text.match(/\bdev (\S+)/);
+                if (m) {
+                    root._setIface(m[1]);
+                    readProc.running = true;
+                } else {
+                    root.activeIface = "";
+                    root.rxSpeed = 0;
+                    root.txSpeed = 0;
+                }
             }
         }
     }
@@ -159,6 +212,7 @@ Singleton {
                 }
                 root._lastRx = (o.lastRx !== undefined) ? Number(o.lastRx) : -1;
                 root._lastTx = (o.lastTx !== undefined) ? Number(o.lastTx) : -1;
+                root._lastIface = (o.iface !== undefined) ? String(o.iface) : "";
             } catch (e) {
                 root._resetMonth(root._curMonth());
             }
@@ -179,7 +233,7 @@ Singleton {
             root.refresh();
         }
         function status(): string {
-            return `iface=${root.cfg.iface} down=${root.humanRate(root.rxSpeed)} up=${root.humanRate(root.txSpeed)} month=${root.month} total=${root.monthTotalGiB.toFixed(2)}GiB cap=${root.capGiB}GiB pct=${root.capPercent.toFixed(0)} overWarn=${root.overWarn}`;
+            return `iface=${root.cfg.iface} active=${root.activeIface} down=${root.humanRate(root.rxSpeed)} up=${root.humanRate(root.txSpeed)} month=${root.month} total=${root.monthTotalGiB.toFixed(2)}GiB cap=${root.capGiB}GiB pct=${root.capPercent.toFixed(0)} overWarn=${root.overWarn}`;
         }
     }
 }

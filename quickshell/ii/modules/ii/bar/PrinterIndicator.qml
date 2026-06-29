@@ -43,22 +43,5 @@ Loader {
             cursorShape: Qt.PointingHandCursor
             onClicked: Printer.toggle()
         }
-
-        StyledToolTip {
-            extraVisibleCondition: pillMouse.containsMouse
-            text: {
-                let lines = [];
-                lines.push(Translation.tr("Default: %1").arg(Printer.defaultPrinter.length > 0 ? Printer.defaultPrinter : Translation.tr("none")));
-                lines.push(Translation.tr("Jobs: %1").arg(Printer.jobCount));
-                let disabled = [];
-                for (const p of Printer.printers) {
-                    if (!p.enabled || p.state === "disabled")
-                        disabled.push(p.name);
-                }
-                if (disabled.length > 0)
-                    lines.push(Translation.tr("Disabled: %1").arg(disabled.join(", ")));
-                return lines.join("\n");
-            }
-        }
     }
 }

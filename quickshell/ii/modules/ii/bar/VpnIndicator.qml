@@ -49,20 +49,5 @@ Loader {
             cursorShape: Qt.PointingHandCursor
             onClicked: VpnStatus.refresh()
         }
-
-        StyledToolTip {
-            extraVisibleCondition: pillMouse.containsMouse
-            text: {
-                let lines = [];
-                lines.push(Translation.tr("Network: %1").arg(VpnStatus.ssid.length > 0 ? VpnStatus.ssid : (VpnStatus.iface.length > 0 ? VpnStatus.iface : Translation.tr("unknown"))));
-                lines.push(VpnStatus.trusted ? Translation.tr("Trusted") : Translation.tr("Untrusted"));
-                lines.push(VpnStatus.vpnUp ? Translation.tr("VPN: %1 (up)").arg(VpnStatus.vpnName) : Translation.tr("VPN: down"));
-                if (VpnStatus.localIp.length > 0)
-                    lines.push(Translation.tr("Local: %1").arg(VpnStatus.localIp));
-                if (VpnStatus.publicIp.length > 0)
-                    lines.push(Translation.tr("Public: %1 %2").arg(VpnStatus.publicIp).arg(VpnStatus.geoCity.length > 0 ? `(${VpnStatus.geoCity}, ${VpnStatus.geoCountry})` : ""));
-                return lines.join("\n");
-            }
-        }
     }
 }

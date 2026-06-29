@@ -45,21 +45,5 @@ Loader {
             cursorShape: Qt.PointingHandCursor
             onClicked: Timetable.refresh()
         }
-
-        StyledToolTip {
-            extraVisibleCondition: pillMouse.containsMouse
-            text: {
-                let lines = [Timetable.nextTitle];
-                if (Timetable.nextRoom.length > 0)
-                    lines.push(Translation.tr("Room: %1").arg(Timetable.nextRoom));
-                if (Timetable.nextStart) {
-                    const t = Qt.formatDateTime(Timetable.nextStart, "ddd HH:mm");
-                    lines.push(Timetable.ongoing ? Translation.tr("Ongoing (started %1)").arg(t) : Translation.tr("Starts %1").arg(t));
-                }
-                if (!Timetable.ongoing && Timetable.minutesUntil >= 0)
-                    lines.push(Translation.tr("In %1 min").arg(Timetable.minutesUntil));
-                return lines.join("\n");
-            }
-        }
     }
 }

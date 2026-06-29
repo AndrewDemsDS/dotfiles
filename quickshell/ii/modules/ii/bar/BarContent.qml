@@ -289,6 +289,10 @@ Item { // Bar content region
                         Layout.rightMargin: indicatorsRowLayout.realSpacing
                         color: rightSidebarButton.colText
                     }
+                    NetUsageIndicator {
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.rightMargin: indicatorsRowLayout.realSpacing
+                    }
                     VpnIndicator {
                         Layout.alignment: Qt.AlignVCenter
                         Layout.rightMargin: indicatorsRowLayout.realSpacing
@@ -297,15 +301,11 @@ Item { // Bar content region
                         Layout.alignment: Qt.AlignVCenter
                         Layout.rightMargin: indicatorsRowLayout.realSpacing
                     }
-                    NetUsageIndicator {
+                    PrinterIndicator {
                         Layout.alignment: Qt.AlignVCenter
                         Layout.rightMargin: indicatorsRowLayout.realSpacing
                     }
                     TimetableIndicator {
-                        Layout.alignment: Qt.AlignVCenter
-                        Layout.rightMargin: indicatorsRowLayout.realSpacing
-                    }
-                    PrinterIndicator {
                         Layout.alignment: Qt.AlignVCenter
                         Layout.rightMargin: indicatorsRowLayout.realSpacing
                     }

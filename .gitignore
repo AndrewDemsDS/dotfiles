@@ -8,6 +8,11 @@
 !/.githooks/
 !/setup/
 
+# Nix support (tracked) — flake exposing the ii home-manager module + dev shell
+!/flake.nix
+!/flake.lock
+!/nix/
+
 # Release / project docs (tracked)
 !/LICENSE
 !/README.md

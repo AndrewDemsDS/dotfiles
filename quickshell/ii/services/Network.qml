@@ -265,7 +265,7 @@ Singleton {
 
     Process {
         id: updateConnectionType
-        command: ["sh", "-c", "nmcli -t -f TYPE,STATE d status && nmcli -t -f CONNECTIVITY g"]
+        command: ["sh", "-c", "nmcli -t -f TYPE,STATE,CONNECTION d status && nmcli -t -f CONNECTIVITY g"]
         running: true
         // Re-trigger only restarts the process; StdioCollector below parses the FULL output
         // atomically on completion, so rapid nmcli-monitor events can't deliver a truncated
@@ -280,27 +280,32 @@ Singleton {
                 let hasEthernet = false;
                 let hasWifi = false;
                 let wifiStatus = "disconnected";
+                // Terse line: "TYPE:STATE:CONNECTION". Match fields EXACTLY — substring checks
+                // mis-fire ("disconnected" contains "connected"; "wifi-p2p" contains "wifi").
                 lines.forEach(line => {
-                    if (line.includes("ethernet") && line.includes("connected"))
+                    const parts = line.split(":");
+                    const type = parts[0];
+                    const state = parts[1] ?? "";
+                    const conn = parts.slice(2).join(":"); // connection name may contain ":"
+                    if (type === "ethernet" && state === "connected") {
                         hasEthernet = true;
-                    else if (line.includes("wifi:")) {
-                        if (line.includes("disconnected")) {
-                            wifiStatus = "disconnected"
-                        }
-                        else if (line.includes("connected")) {
+                    } else if (type === "wifi") {
+                        if (conn === "Hotspot") {
+                            // Our own AP profile — the device is an access point, not a station
+                            // uplink, so don't report it as a Wi-Fi connection.
+                        } else if (state === "connected") {
                             hasWifi = true;
-                            wifiStatus = "connected"
-
+                            wifiStatus = "connected";
                             if (connectivity === "limited") {
                                 hasWifi = false;
-                                wifiStatus = "limited"
+                                wifiStatus = "limited";
                             }
-                        }
-                        else if (line.includes("connecting")) {
-                            wifiStatus = "connecting"
-                        }
-                        else if (line.includes("unavailable")) {
-                            wifiStatus = "disabled"
+                        } else if (state === "connecting") {
+                            wifiStatus = "connecting";
+                        } else if (state === "unavailable") {
+                            wifiStatus = "disabled";
+                        } else {
+                            wifiStatus = "disconnected";
                         }
                     }
                 });

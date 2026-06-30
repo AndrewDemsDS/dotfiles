@@ -16,8 +16,6 @@ Item {
 
     // Entities that have sub-controls worth an expand affordance.
     function hasDetail(entityId) {
-        if (!entityId)
-            return false; // delegate modelData is transiently null during Repeater construction
         const d = entityId.split(".")[0];
         if (d === "climate" || d === "media_player" || d === "fan" || d === "cover" || d === "vacuum")
             return true;
@@ -27,8 +25,6 @@ Item {
     }
 
     function iconFor(entityId) {
-        if (!entityId)
-            return "help"; // delegate modelData is transiently null during Repeater construction
         const d = entityId.split(".")[0];
         switch (d) {
         case "light":

@@ -5,7 +5,11 @@
 # network) and don't fail the run.
 set -uo pipefail
 
-PID="$(pgrep -x qs | head -1)"
+# Quickshell 0.3.0 (nixpkgs) runs through a wrapper, so the process comm is
+# ".quickshell-wra", not "qs" — `pgrep -x qs` no longer matches. Use the official
+# instance discovery (the ii shell), with a pgrep fallback on the full cmdline.
+PID="$(qs list --all 2>/dev/null | awk '/Process ID:/{p=$3} /Shell ID: ii$/{print p; exit}')"
+[ -z "$PID" ] && PID="$(pgrep -f 'quickshell -c ii' | head -1)"
 [ -z "$PID" ] && { echo "No running 'qs' shell found."; exit 1; }
 
 pass=0; fail=0; warn=0

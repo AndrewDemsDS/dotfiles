@@ -21,6 +21,11 @@ whatweb
 ffuf
 nmap
 
+# --- optional: secrets surfacing (Super+Alt+W). Only for backend "pass" ---
+# (the "command" backend shells out to whatever you configure instead)
+pass                    # password-store: pass show -c (copy + auto-clear)
+gnupg                   # gpg, the pass decryption backend
+
 # --- pip, installed in their OWN venvs (NOT system packages) ---
 # trafilatura[all]  -> ~/.local/state/quickshell/reader-venv   (news article reader)
 #   python -m venv ~/.local/state/quickshell/reader-venv

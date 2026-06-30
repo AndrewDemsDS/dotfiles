@@ -677,6 +677,57 @@ ContentPage {
         }
     }
 
+    // ── Secrets ─────────────────────────────────────────────────────
+    ContentSection {
+        icon: "key"
+        title: Translation.tr("Secrets")
+
+        ConfigSwitch {
+            text: Translation.tr("Enable secrets (Super+Alt+W)")
+            checked: Config.options.secrets.enable
+            onCheckedChanged: Config.options.secrets.enable = checked
+            StyledToolTip { text: Translation.tr("Copy a saved secret to the clipboard, then auto-clear. Values are never shown.") }
+        }
+        ConfigSpinBox {
+            icon: "av_timer"
+            text: Translation.tr("Auto-clear (s)")
+            value: Config.options.secrets.clearSeconds
+            from: 5; to: 300; stepSize: 5
+            onValueChanged: Config.options.secrets.clearSeconds = value
+        }
+        MaterialTextArea {
+            Layout.fillWidth: true
+            placeholderText: Translation.tr("Backend: pass | command")
+            text: Config.options.secrets.backend
+            wrapMode: TextEdit.Wrap
+            onTextChanged: Config.options.secrets.backend = text
+        }
+        MaterialTextArea {
+            Layout.fillWidth: true
+            placeholderText: Translation.tr("pass store dir (empty = ~/.password-store)")
+            text: Config.options.secrets.store
+            wrapMode: TextEdit.Wrap
+            onTextChanged: Config.options.secrets.store = text
+        }
+        ContentSubsection {
+            title: Translation.tr("Command backend (used when backend = command)")
+            MaterialTextArea {
+                Layout.fillWidth: true
+                placeholderText: Translation.tr("List command — prints entry names, one per line")
+                text: Config.options.secrets.listCommand
+                wrapMode: TextEdit.Wrap
+                onTextChanged: Config.options.secrets.listCommand = text
+            }
+            MaterialTextArea {
+                Layout.fillWidth: true
+                placeholderText: Translation.tr("Show command — $SECRET_NAME prints the secret")
+                text: Config.options.secrets.showCommand
+                wrapMode: TextEdit.Wrap
+                onTextChanged: Config.options.secrets.showCommand = text
+            }
+        }
+    }
+
     // ── Printer ─────────────────────────────────────────────────────
     ContentSection {
         icon: "print"

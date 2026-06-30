@@ -85,6 +85,8 @@ hl.bind("SUPER + ALT + G", hl.dsp.exec_cmd(qsIpcCall .. " homelabGlance toggle")
     { description = "Apps: Homelab glance" })
 hl.bind("SUPER + ALT + P", hl.dsp.exec_cmd(qsIpcCall .. " reconLauncher toggle"),
     { description = "Security: Recon launcher (pentest)" })
+hl.bind("SUPER + ALT + W", hl.dsp.exec_cmd(qsIpcCall .. " secrets toggle"),
+    { description = "Security: Secrets (copy to clipboard)" })
 hl.bind("SUPER + ALT + K", hl.dsp.exec_cmd(qsIpcCall .. " printer toggle"),
     { description = "Apps: Printers / print queue" })
 hl.bind("SUPER + SHIFT + X", hl.dsp.exec_cmd(

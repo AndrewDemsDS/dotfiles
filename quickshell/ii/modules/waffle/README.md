@@ -1,37 +1,31 @@
-## Waffle
+# Waffle
 
-A recreation of Windoes. It's WIP!
+A Windows-style shell variant, recreated in Quickshell. Work in progress; currently just the bar.
 
-- If you install illogical-impulse fully, you can press Super+Alt+W to switch to this style.
-- If you're just copying the Quickshell config, run the config as usual (`qs -c ii`) then run `qs -c ii ipc call panelFamily cycle`
+## Switching to it
 
-## From EWW version to Quickshell
+- Full illogical-impulse install: press `Super+Alt+W` to switch styles.
+- Config-only install: run the shell with `qs -c ii`, then `qs -c ii ipc call panelFamily cycle`.
 
-Just a reflection, in case anyone's interested. My blog is probably a better place for this, but it does not exist. Besides, this is going to change as I do more stuff. Currently there's just the bar.
+## Notes on the Quickshell port
 
-### Improvements
+This replaces an earlier EWW version. The Quickshell rewrite gained a few things:
 
-- QtQuick's `Button` has the `{top/bottom/left/right}Inset` properties, so we can have clickable regions expanding beyond the button background for free. With EWW it was annoying to wrap the button content with an `eventbox` that has some padding, then somehow use CSS selectors to make sure hovering effects work. I have to admit, (a large) part of that annoyance was with how bad my copy-pasting coding practice was at the time, but still...
+- **Expanded click targets.** QtQuick `Button` exposes `topInset`/`bottomInset`/`leftInset`/`rightInset`,
+  so clickable regions extend past the button background without wrapping content in an eventbox.
+- **Transforms.** QtQuick applies `rotation` and `scale` almost anywhere, so bouncy icons and rotating
+  chevrons are straightforward. GTK3 CSS has no transform support.
+- **Built-in system tray.** Quickshell ships a tray service, so the layout no longer needs Waybar for
+  the tray.
+- **Live style switching.** A `Loader` swaps this style in and out from the main style without
+  restarting the widget system.
+- **Fixed sizing.** Sizes are hardcoded, scaled at runtime through Qt's `QT_SCALE_FACTOR`.
 
-- Fancy effects: Gtk3 CSS does not support transformations. In QtQuick we can smack `rotation` and `scale` almost everywhere, so it's simple to make bouncy icons and rotating chevrons
+## Known friction
 
-- Quickshell provides a system tray service (EWW does now but didn't at the time I created the EWW Windoes version), so now there's no Waybar needed for the tray.
-
-- QtQuick has `Loader`s, so we can have this live-switchable from the main style without killing the widget system, moving styles to the correct folder, and relaunching.
-
-- This time my computer is powerful enough to run a VM, so I don't have to occasionally reboot to take quick screenshots for reference. I try to make everything pixel-perfect so this is necessary. Speaking about pixel-perfectness, in the EWW version I hardcoded sizes, but this time I'm still doing that (lol), BUT that's normal and not a problem because Qt has the `QT_SCALE_FACTOR` env var for scaling. (Please feel free to prove me wrong in saying Gtk3 doesn't have that magic)
-
-### Challenges
-
-- Qt is not Gtk and definitely not React
-  - We don't get directional border on QtQuick `Rectangle`s like in CSS. I was able to get around this with manual drawing, but it was a bit more work
-
-- Fluent Icons is difficult to use, compared to Material Symbols
-  - No React, so no clean use via a library.
-  - If we use the font, there's no proper, searchable **codepoint** cheatsheet like Nerd Fonts, and there's no ligatures
-  - I resorted to downloading individual SVGs. Not that nice, but it's better than scanning the whole table of icons every time I want one. For this we have fluenticon.com and fluenticons.co, but icons are awkwardly named and there's no alias. Why is the reload/refresh icon called "arrow-sync"? Well, the name is not misleading, but arguably reload/refresh are more common actions. From Fluent Design's [page on Iconography](https://fluent2.microsoft.design/iconography):
-
-  > Fluent system icons are literal metaphors and are named for the shape or object they represent, not the functionality they provide
-
-  "sync" is functionality.
-
+- QtQuick `Rectangle` has no per-side borders like CSS. Directional borders are drawn manually.
+- Fluent Icons are harder to use than Material Symbols: no searchable codepoint cheatsheet, no
+  ligatures, and the names describe shapes rather than actions (the reload icon is `arrow-sync`).
+  The icons here are individual SVGs from fluenticon.com and fluenticons.co. Per Fluent Design's
+  [iconography guidance](https://fluent2.microsoft.design/iconography), the names are literal
+  metaphors for the shape, not the function.

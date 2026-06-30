@@ -6,7 +6,7 @@ modules that already exist**, and a set of features **mined from end-4's open is
 open issues, agent-triaged) that the shell doesn't cover yet. Net-new ideas that duplicate existing
 capability were dropped (see bottom).
 
-Conventions for any work here: the "done" checklist in [CONTRIBUTING.md](CONTRIBUTING.md) — an
+Conventions for any work here follow the "done" checklist in [CONTRIBUTING.md](CONTRIBUTING.md): an
 enable flag in `Config.qml`, gating on `Config.ready && enable`, a **Settings → Custom** entry, and
 any shelled-out tool recorded in `setup/dependencies.txt` (and the NixOS `home.packages`). Build in
 a worktree, parse-gate with `qs -p`, deploy by ff-merge.
@@ -16,12 +16,13 @@ Each entry cites its upstream issue (`e4#NNNN` = end-4/dots-hyprland).
 
 ---
 
-## Phase 1 — Quick wins (low effort, self-contained warm-ups)
+## Phase 1: Quick wins (low effort, self-contained warm-ups)
 
-### 1. Hyprshade / screen-shader quick toggle  `[ ]`  (e4#3252) — UNBLOCKED (use `hyprctl eval`)
+### 1. Hyprshade / screen-shader quick toggle  `[ ]`  (e4#3252) · UNBLOCKED (use `hyprctl eval`)
 Screen-shader toggle (blue-light / CRT / vignette). Earlier marked blocked because `hyprshade 4.x`
 uses `hyprctl keyword`, which Hyprland 0.55's Lua parser rejects. **Resolved:** the Lua-parser
-replacement is `hyprctl eval`, so build the toggle around it directly — **no `hyprshade` binary needed**:
+replacement is `hyprctl eval`, so build the toggle around it directly, with **no `hyprshade` binary
+needed**:
 - apply: `hyprctl eval "hl.config({ decoration = { screen_shader = '<path>' } })"`
 - clear: same with `screen_shader = '[[EMPTY]]'`
 - read:  `hyprctl -j getoption decoration.screen_shader` (dot syntax)
@@ -31,15 +32,15 @@ replacement is `hyprctl eval`, so build the toggle around it directly — **no `
 ⚠ General rule for this system: any runtime Hyprland option change must use `hyprctl eval
 'hl.config({...})'`, NOT `hyprctl keyword` (disabled under the Lua parser). Audit other features.
 
-### 2. Translator history + swap  `[ ]`  (e4#2759) — easy · improves existing
+### 2. Translator history + swap  `[ ]`  (e4#2759) · easy · improves existing
 Recent source/target language pairs remembered and pinned to the top; a swap button + hotkey.
 - **Where**: extend `services/ScreenTranslator.qml` (persist recent pairs) +
   `modules/ii/screenTranslator/ScreenTranslatorPanel.qml` (recent-pairs row + swap affordance).
-- **How**: pure QML state — persist a JSON array of `[src,dst]` to `~/.local/state/quickshell/`
+- **How**: pure QML state. Persist a JSON array of `[src,dst]` to `~/.local/state/quickshell/`
   (the `news_read.json` FileView pattern); swap = exchange two properties. No new deps.
 - **Config**: `screenTranslator.recentPairs` (auto-managed). In-panel swap hotkey, no global keybind.
 
-### 3. File results in overview search  `[ ]`  (e4#3104) — low-med · improves existing
+### 3. File results in overview search  `[ ]`  (e4#3104) · low-med · improves existing
 Typing a path-ish query (prefix `/`, `~`, or `f:`) surfaces file results next to apps/math.
 - **Where**: extend `services/LauncherSearch.qml` (or `AppSearch.qml`) + `modules/ii/overview/
   SearchBar.qml`/`SearchWidget.qml`/`SearchItem.qml`.
@@ -49,9 +50,9 @@ Typing a path-ish query (prefix `/`, `~`, or `f:`) surfaces file results next to
 
 ---
 
-## Phase 2 — Media cluster (shared `MprisController`)
+## Phase 2: Media cluster (shared `MprisController`)
 
-### 4. Media seek bar + multi-player filtering  `[ ]`  (e4#847) — medium · improves existing
+### 4. Media seek bar + multi-player filtering  `[ ]`  (e4#847) · medium · improves existing
 A draggable seek bar on the media control, and surface only the active/most-recent player when
 several are running.
 - **Where**: `services/MprisController.qml` (position polling + seek dispatch, active-player pick) +
@@ -61,15 +62,15 @@ several are running.
   playback status + last-active. Dep: `playerctl` (present).
 - **Config**: `mediaControls.{showSeekBar, singlePlayer}`.
 
-### 5. MPRIS controls on the lock screen  `[ ]`  (e4#2042) — medium
+### 5. MPRIS controls on the lock screen  `[ ]`  (e4#2042) · medium
 Compact now-playing + play/pause/skip on the lock surface.
-- **Where**: `modules/ii/lock/LockSurface.qml` — add a small media widget bound to `MprisController`.
+- **Where**: `modules/ii/lock/LockSurface.qml`, add a small media widget bound to `MprisController`.
 - **How**: reuse the existing MPRIS service; controls call play/pause/next. **Security**: show only
-  title/artist/art and transport — no notifications, no seek to arbitrary content; gate behind
+  title/artist/art and transport, no notifications, no seek to arbitrary content; gate behind
   `lock.showMedia`. Render below the auth field, never stealing focus from it.
 - **Config**: `lock.showMedia` (default true).
 
-### 6. Fullscreen "now playing" + synced lyrics  `[ ]`  (e4#2045, e4#3109) — medium
+### 6. Fullscreen "now playing" + synced lyrics  `[ ]`  (e4#2045, e4#3109) · medium
 A Spotify-style overlay: large art, controls, and time-synced lyrics.
 - **Where**: new `modules/ii/nowPlaying/NowPlaying.qml` (FloatingWindow or layer overlay) registered
   in `IllogicalImpulseFamily`, + `services/Lyrics.qml`.
@@ -79,9 +80,9 @@ A Spotify-style overlay: large art, controls, and time-synced lyrics.
 
 ---
 
-## Phase 3 — System & QoL
+## Phase 3: System & QoL
 
-### 7. Audio output-port selector  `[ ]`  (e4#3332) — medium
+### 7. Audio output-port selector  `[ ]`  (e4#3332) · medium
 Switch headphone ⇄ speaker (ports on one sink) from the volume popup.
 - **Where**: extend `modules/ii/sidebarRight/volumeMixer/VolumeDialogContent.qml` /
   `AudioDeviceSelectorButton.qml` + `services/Audio.qml`.
@@ -89,7 +90,7 @@ Switch headphone ⇄ speaker (ports on one sink) from the volume popup.
   `pactl set-sink-port <sink> <port>`. Distinguish port-vs-sink cleanly. Dep: `pactl` (present).
 - **Config**: none needed beyond the existing audio panel.
 
-### 8. Bluetooth battery popup  `[ ]`  (e4#3060) — easy-med
+### 8. Bluetooth battery popup  `[ ]`  (e4#3060) · easy-med
 Transient Material-You popup with device name + battery % on connect.
 - **Where**: new `services/BluetoothBattery.qml` + a reuse of the OSD popup
   (`modules/ii/onScreenDisplay/`).
@@ -97,7 +98,7 @@ Transient Material-You popup with device name + battery % on connect.
   3-5s auto-dismiss popup. No binary dep (native DBus).
 - **Config**: `bluetoothBattery.enable`.
 
-### 9. Auto dark/light by time  `[ ]`  (e4#1691) — easy-med
+### 9. Auto dark/light by time  `[ ]`  (e4#1691) · easy-med
 Flip the colour scheme at sunrise/sunset (or fixed times).
 - **Where**: new `services/AutoTheme.qml` (Timer) calling the existing dark/light switch
   (`services/Wallpapers.qml` + `scripts/colors/applycolor.sh`, same path `DarkModeToggle` uses).
@@ -105,14 +106,14 @@ Flip the colour scheme at sunrise/sunset (or fixed times).
   `lightAt`/`darkAt`; a Timer checks every few minutes and switches once per boundary. No new dep.
 - **Config**: `autoTheme.{enable, mode: sun|fixed, lightAt, darkAt}`.
 
-### 10. Workspace QoL  `[ ]`  (e4#2196, e4#2914) — easy
+### 10. Workspace QoL  `[ ]`  (e4#2196, e4#2914) · easy
 Special-workspace (scratchpad) indicator in the bar, and per-monitor workspace filtering.
 - **Where**: `modules/ii/bar/` workspace widget.
-- **How**: Hyprland IPC — `activespecial` event → badge; filter the workspace `Repeater` by
+- **How**: Hyprland IPC. `activespecial` event drives the badge; filter the workspace `Repeater` by
   `monitor === thisScreen` using `hyprctl monitors -j`. No new dep.
 - **Config**: `bar.workspaces.{showSpecial, perMonitor}`.
 
-### 11. Wallpaper rotation + change hook  `[ ]`  (e4#2477, e4#1936) — easy
+### 11. Wallpaper rotation + change hook  `[ ]`  (e4#2477, e4#1936) · easy
 Auto-cycle wallpapers from a folder; run a user script after each change.
 - **Where**: extend `services/Wallpapers.qml`.
 - **How**: Timer cycles a configured folder at an interval, calling the existing wallpaper-set path;
@@ -122,16 +123,16 @@ Auto-cycle wallpapers from a folder; run a user script after each change.
 
 ---
 
-## Phase 4 — Bigger / maker bets
+## Phase 4: Bigger / maker bets
 
-### 12. Voice-to-text on a keybind  `[ ]`  (e4#2955) — medium
-Hold-to-record → transcribe → inject into the focused field.
+### 12. Voice-to-text on a keybind  `[ ]`  (e4#2955) · medium
+Hold-to-record, transcribe, inject into the focused field.
 - **Where**: new `services/VoiceInput.qml` + a recording OSD indicator.
 - **How**: keybind starts capture; `Process` pipes mic (PipeWire) to `whisper.cpp` (or `vosk`);
   result typed via `wtype`/`ydotool` (present). Recording indicator while active.
 - **Config**: `voiceInput.{enable, model}`. Dep: `whisper-cpp` (add). Keybind e.g. `Super+Alt+V`.
 
-### 13. Captive-portal launcher  `[ ]`  (e4#3257) — medium · fits your network/VPN work
+### 13. Captive-portal launcher  `[ ]`  (e4#3257) · medium · fits your network/VPN work
 Detect a captive portal and open the login page.
 - **Where**: extend `services/VpnStatus.qml` (already does connectivity/trust) or new
   `services/CaptivePortal.qml`; a notification action.
@@ -139,7 +140,7 @@ Detect a captive portal and open the login page.
   `xdg-open` the redirect URL. Ties into the existing trusted/untrusted-network logic.
 - **Config**: `captivePortal.enable`. No new dep.
 
-### 14. Floating AI overlay  `[ ]`  (e4#2966) — medium
+### 14. Floating AI overlay  `[ ]`  (e4#2966) · medium
 Summon the AI assistant as a dismiss-on-blur floating window (not the sidebar).
 - **Where**: new `modules/ii/aiOverlay/AiOverlay.qml` (FloatingWindow, the reconLauncher pattern) +
   reuse `services/Ai.qml`.
@@ -151,9 +152,9 @@ Summon the AI assistant as a dismiss-on-blur floating window (not the sidebar).
 
 ## Also queued (earlier, still valid)
 
-- **Eye-care break overlay** `[ ]` — tiered breaks / 20-20-20 countdown; `Timer` + layer-shell window,
+- **Eye-care break overlay** `[ ]`: tiered breaks / 20-20-20 countdown; `Timer` + layer-shell window,
   suppressed during `gameMode`/fullscreen, reusing `idleInhibitor`. Easy. (stretchly, blink-eye)
-- **giteaActivity → PR/issue quick actions** `[ ]` — key-bound diff/comment/checkout/open over
+- **giteaActivity → PR/issue quick actions** `[ ]`: key-bound diff/comment/checkout/open over
   `gh`/`tea`. Improves the existing read-only card. (gh-dash)
 
 ## New dependencies these introduce
@@ -171,9 +172,9 @@ Add to `setup/dependencies.txt` + NixOS `home.packages` when the owning feature 
 - **Secrets surfacing** → overlaps gnome-keyring / browser PW managers / CLI pass+sops (built then reverted `6ce0731`).
 - **Pomodoro bar widget** (e4#3272) → already have a `pomodoro` module.
 - Large rewrites skipped: Niri support (e4#1745), "windoes" flavor (e4#2342), modular bar / hefty-hype
-  (e4#3072), GPU/resource monitoring (e4#1472 — end-4 is waiting on a Quickshell stats API).
+  (e4#3072), GPU/resource monitoring (e4#1472, end-4 is waiting on a Quickshell stats API).
 
 ## Sources
 
-- end-4 issue tracker — https://github.com/end-4/dots-hyprland/issues
-- gh-dash — https://github.com/dlvhdr/gh-dash · Stretchly — https://github.com/hovancik/stretchly · Blink Eye — https://github.com/nomandhoni-cs/blink-eye · lrclib — https://lrclib.net
+- end-4 issue tracker: https://github.com/end-4/dots-hyprland/issues
+- gh-dash: https://github.com/dlvhdr/gh-dash · Stretchly: https://github.com/hovancik/stretchly · Blink Eye: https://github.com/nomandhoni-cs/blink-eye · lrclib: https://lrclib.net

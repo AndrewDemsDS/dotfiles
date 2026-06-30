@@ -20,6 +20,7 @@
 !/SECURITY.md
 !/CHANGELOG.md
 !/ROADMAP.md
+!/QA.md
 !/.github/
 
 # Migration/backup artifacts left by the dots installer

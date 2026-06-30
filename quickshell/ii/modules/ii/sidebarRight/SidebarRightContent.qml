@@ -23,6 +23,7 @@ import qs.modules.ii.sidebarRight.serviceHealth
 import qs.modules.ii.sidebarRight.giteaActivity
 import qs.modules.ii.sidebarRight.sensorSparkline
 import qs.modules.ii.sidebarRight.vpnSelector
+import qs.modules.ii.sidebarRight.hotspot
 
 Item {
     id: root
@@ -35,6 +36,7 @@ Item {
     property bool showNightLightDialog: false
     property bool showWifiDialog: false
     property bool showVpnDialog: false
+    property bool showHotspotDialog: false
     property bool editMode: false
 
     Connections {
@@ -42,6 +44,7 @@ Item {
         function onSidebarRightOpenChanged() {
             if (!GlobalStates.sidebarRightOpen) {
                 root.showWifiDialog = false;
+                root.showHotspotDialog = false;
                 root.showBluetoothDialog = false;
                 root.showAudioOutputDialog = false;
                 root.showAudioInputDialog = false;
@@ -194,6 +197,15 @@ Item {
         }
     }
 
+    ToggleDialog {
+        shownPropertyString: "showHotspotDialog"
+        dialog: HotspotDialog {}
+        onShownChanged: {
+            if (shown)
+                Hotspot.refresh();
+        }
+    }
+
     component ToggleDialog: Loader {
         id: toggleDialogLoader
         required property string shownPropertyString
@@ -247,6 +259,9 @@ Item {
             }
             function onOpenVpnDialog() {
                 root.showVpnDialog = true;
+            }
+            function onOpenHotspotDialog() {
+                root.showHotspotDialog = true;
             }
         }
     }

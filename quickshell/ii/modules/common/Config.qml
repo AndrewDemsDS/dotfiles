@@ -545,6 +545,7 @@ Singleton {
                         property int columns: 5
                         property list<var> toggles: [
                             { "size": 2, "type": "network" },
+                            { "size": 1, "type": "hotspot" },
                             { "size": 2, "type": "bluetooth"  },
                             { "size": 1, "type": "idleInhibitor" },
                             { "size": 1, "type": "mic" },
@@ -613,6 +614,14 @@ Singleton {
                 property string toggleConnection: "" // NM connection the quick-toggle controls; empty => auto
                 property bool autoConnect: false // auto-connect the VPN on untrusted networks, disconnect on trusted/home ones
                 property int pollSeconds: 15
+            }
+
+            // Seeds the first-ever "Hotspot" NM profile; after that the profile is the source of
+            // truth (Hotspot service reads ssid/band/psk back from it). Password starts empty so
+            // the user is forced to set an 8+ char one before the hotspot can start.
+            property JsonObject hotspot: JsonObject {
+                property string ssid: "ii-hotspot"
+                property string band: "bg" // "bg" => 2.4GHz, "a" => 5GHz
             }
 
             property JsonObject homeAssistant: JsonObject {

@@ -35,7 +35,7 @@ GroupButton {
     // Edit mode state
     property bool editMode: false
     // Active toggles are in the saved list; unused (hidden-area) ones are not.
-    readonly property bool isActiveToggle: (Config.options.sidebar.quickToggles.android.toggles ?? []).some(t => t.type === root.buttonData.type)
+    readonly property bool isActiveToggle: (Config.options.sidebar.quickToggles.android.toggles ?? []).some(t => t.type === (root.buttonData?.type ?? ""))
     // Render the dragged button (and its ghost) above the others.
     z: dragGhost.Drag.active ? 1000 : 0
 

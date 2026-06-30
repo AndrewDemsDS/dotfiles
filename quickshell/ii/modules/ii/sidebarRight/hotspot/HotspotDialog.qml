@@ -75,6 +75,52 @@ WindowDialog {
         }
     }
 
+    // Connected clients (only while the hotspot is up)
+    ColumnLayout {
+        Layout.fillWidth: true
+        visible: Hotspot.enabled
+        spacing: 4
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+            MaterialSymbol {
+                text: "devices"
+                iconSize: Appearance.font.pixelSize.larger
+                color: Appearance.colors.colOnSurfaceVariant
+            }
+            StyledText {
+                Layout.fillWidth: true
+                text: Hotspot.clientCount === 1
+                    ? Translation.tr("1 device connected")
+                    : Translation.tr("%1 devices connected").arg(Hotspot.clientCount)
+                color: Appearance.colors.colOnSurface
+                font.pixelSize: Appearance.font.pixelSize.smaller
+            }
+        }
+        Repeater {
+            model: Hotspot.clients
+            delegate: RowLayout {
+                required property var modelData
+                Layout.fillWidth: true
+                Layout.leftMargin: 28
+                spacing: 6
+                StyledText {
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                    text: (modelData.host && modelData.host.length > 0) ? modelData.host : modelData.mac
+                    color: Appearance.colors.colOnSurfaceVariant
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                }
+                StyledText {
+                    text: modelData.ip
+                    color: Appearance.colors.colSubtext
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                }
+            }
+        }
+    }
+
     // SSID
     MaterialTextField {
         Layout.fillWidth: true
@@ -155,7 +201,9 @@ WindowDialog {
             cache: false
             smooth: false
             fillMode: Image.PreserveAspectFit
-            source: Hotspot.qrPath.length > 0 ? `file://${Hotspot.qrPath}?v=${Hotspot.qrGeneration}` : ""
+            // Only point at the file once a generation has actually been written this session,
+            // so we never flash the broken "?v=0" missing-file state before qrencode finishes.
+            source: (Hotspot.qrGeneration > 0 && Hotspot.qrPath.length > 0) ? `file://${Hotspot.qrPath}?v=${Hotspot.qrGeneration}` : ""
             sourceSize.width: 400
             sourceSize.height: 400
         }

@@ -36,6 +36,11 @@ Singleton {
     readonly property bool passwordValid: root.password.length >= 8
     readonly property string materialSymbol: root.enabled ? "wifi_tethering" : "wifi_tethering_off"
 
+    // Connected clients, read from NetworkManager's dnsmasq leases (world-readable, gives
+    // hostname + IP + MAC). Polled only while the hotspot is up. [{ host, ip, mac }]
+    property var clients: []
+    readonly property int clientCount: root.clients.length
+
     // ── Wi-Fi QR payload (Android/iOS camera join) ──────────────────────────
     // WIFI:T:WPA;S:<ssid>;P:<pass>;H:false;;  — backslash-escape \ ; , : "
     function _qrEscape(s) {
@@ -181,6 +186,43 @@ Singleton {
             onRead: line => {
                 if (line.includes(root.profileName) || line.includes("connectivity"))
                     root.refresh();
+            }
+        }
+    }
+
+    // ── Connected clients ────────────────────────────────────────────────────
+    // Poll the dnsmasq leases ONLY while the hotspot is up; clear the list when it goes down.
+    onEnabledChanged: {
+        if (!root.enabled)
+            root.clients = [];
+        else
+            clientsProc.running = true;
+    }
+
+    Timer {
+        running: root.enabled
+        interval: 5000
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: clientsProc.running = true
+    }
+
+    Process {
+        id: clientsProc
+        command: ["bash", "-c", `f="/var/lib/NetworkManager/dnsmasq-${root.iface}.leases"; [ -r "$f" ] && cat "$f" || true`]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                // dnsmasq lease line: "<expiry> <mac> <ip> <hostname> <client-id>". hostname is "*" if unknown.
+                const out = [];
+                const lines = text.trim().length > 0 ? text.trim().split("\n") : [];
+                for (const line of lines) {
+                    const f = line.trim().split(/\s+/);
+                    if (f.length < 3)
+                        continue;
+                    const host = (f[3] && f[3] !== "*") ? f[3] : "";
+                    out.push({ mac: f[1], ip: f[2], host: host });
+                }
+                root.clients = out;
             }
         }
     }

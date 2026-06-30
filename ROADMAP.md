@@ -18,16 +18,14 @@ Each entry cites its upstream issue (`e4#NNNN` = end-4/dots-hyprland).
 
 ## Phase 1 — Quick wins (low effort, self-contained warm-ups)
 
-### 1. Hyprshade quick toggle  `[ ]`  (e4#3252) — easy
-Screen-shader toggle (blue-light / CRT / vignette / grayscale) alongside the existing NightLight /
-GameMode toggles, plus a shader picker.
-- **Where**: new `services/Hyprshade.qml` (singleton) + toggles in all three styles
-  (`modules/common/models/quickToggles/HyprshadeToggle.qml`, `androidStyle/`, `classicStyle/`),
-  modelled on `NightLight`/`GameMode`.
-- **How**: shell `hyprshade on <name>` / `hyprshade off`; current shader from `hyprshade current`;
-  list from `hyprshade ls`. Re-apply on wallpaper reload (the known upstream pain point).
-- **Config**: `hyprshade.{enable, defaultShader}`. Settings → Custom section + a picker in the toggle's
-  long-press menu. **Dep**: `hyprshade` (NOT installed — add to deps + home.packages).
+### 1. Hyprshade quick toggle  `[-]`  (e4#3252) — BLOCKED
+Screen-shader toggle (blue-light / CRT / vignette). **Blocked on this system:** Hyprland 0.55.4 uses
+the non-legacy config parser, which rejects `hyprctl keyword` (`keyword can't work with non-legacy
+parsers`). `hyprshade` applies shaders *via* `hyprctl keyword`, so it's a silent no-op here — verified
+empirically (the option `decoration:screen_shader` stays `set: false` after `hyprshade on`). Revisit if
+Hyprland restores runtime `keyword`, or if a non-keyword shader-set path appears.
+⚠ Broader implication: `hyprctl keyword` is disabled shell-wide — audit any existing/planned feature
+that relies on it (runtime option changes), and prefer config-file edits + `hyprctl reload` instead.
 
 ### 2. Translator history + swap  `[ ]`  (e4#2759) — easy · improves existing
 Recent source/target language pairs remembered and pinned to the top; a swap button + hotkey.

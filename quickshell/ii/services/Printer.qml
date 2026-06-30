@@ -90,8 +90,14 @@ Singleton {
             Quickshell.execDetached(cmd.split(" "));
             return;
         }
-        const url = "http://localhost:631/jobs/";
-        Quickshell.execDetached(["bash", "-c", `B="$(command -v brave || command -v brave-browser)"; if [ -n "$B" ]; then exec "$B" --app="${url}"; else exec xdg-open "${url}"; fi`]);
+        // The URL is a constant today, but pass it via the environment as a quoted
+        // "$URL" anyway, so this stays injection-safe if it ever becomes configurable.
+        Quickshell.execDetached({
+            "command": ["bash", "-c", 'B="$(command -v brave || command -v brave-browser)"; if [ -n "$B" ]; then exec "$B" --app="$URL"; else exec xdg-open "$URL"; fi'],
+            "environment": {
+                "URL": "http://localhost:631/jobs/"
+            }
+        });
     }
 
     Process {

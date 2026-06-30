@@ -83,14 +83,30 @@ WindowDialog {
         onTextChanged: root.fSsid = text
     }
 
-    // Password
-    MaterialTextField {
-        id: passwordField
+    // Password (masked by default; the eye toggles reveal)
+    RowLayout {
         Layout.fillWidth: true
-        placeholderText: Translation.tr("Password (8+ characters)")
-        text: root.fPassword
-        onTextChanged: root.fPassword = text
-        inputMethodHints: Qt.ImhSensitiveData
+        spacing: 4
+        MaterialTextField {
+            id: passwordField
+            Layout.fillWidth: true
+            property bool revealed: false
+            placeholderText: Translation.tr("Password (8+ characters)")
+            text: root.fPassword
+            onTextChanged: root.fPassword = text
+            echoMode: revealed ? TextInput.Normal : TextInput.Password
+            inputMethodHints: Qt.ImhSensitiveData
+        }
+        IconToolbarButton {
+            Layout.preferredHeight: passwordField.implicitHeight
+            Layout.preferredWidth: Layout.preferredHeight
+            text: passwordField.revealed ? "visibility_off" : "visibility"
+            toggled: passwordField.revealed
+            onClicked: passwordField.revealed = !passwordField.revealed
+            StyledToolTip {
+                text: passwordField.revealed ? Translation.tr("Hide password") : Translation.tr("Show password")
+            }
+        }
     }
     StyledText {
         visible: !root.passwordValid

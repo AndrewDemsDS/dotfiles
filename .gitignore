@@ -32,9 +32,6 @@ hypr/hyprlock/colors.conf
 # Secrets — never commit tokens (HA/MQTT/Gitea)
 quickshell/secrets/
 **/secrets/
-# …but the secrets-picker MODULE (code, no tokens) is tracked; un-ignore it.
-!/quickshell/ii/modules/ii/secrets/
-!/quickshell/ii/modules/ii/secrets/**
 
 # Dev scaffolding / generated
 quickshell/ii/Harness.qml

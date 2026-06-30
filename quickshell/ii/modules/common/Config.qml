@@ -729,17 +729,6 @@ Singleton {
             property string wordlist: "" // path to a wordlist for ffuf (optional; ffuf disabled until set)
             }
 
-            // Secrets surfacing (Super+Alt+W): copy a saved secret to the clipboard with auto-clear.
-            // Plaintext never enters the shell — copying happens inside the shelled pipe. Names only.
-            property JsonObject secrets: JsonObject {
-                property bool enable: false
-                property string backend: "pass" // "pass" (password-store) | "command" (custom)
-                property int clearSeconds: 45 // clipboard auto-clear timeout
-                property string store: "" // optional PASSWORD_STORE_DIR (empty => ~/.password-store)
-                property string listCommand: "" // backend "command": prints entry names, one per line
-                property string showCommand: "" // backend "command": $SECRET_NAME => prints the secret (piped to wl-copy)
-            }
-
             property JsonObject printer: JsonObject {
                 property bool enable: true
                 property int pollSeconds: 30

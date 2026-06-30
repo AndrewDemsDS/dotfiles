@@ -27,7 +27,6 @@ import qs.modules.ii.wallpaperSelector
 import qs.modules.ii.serviceLauncher
 import qs.modules.ii.homelabGlance
 import qs.modules.ii.reconLauncher
-import qs.modules.ii.secrets
 import qs.modules.ii.printer
 
 Scope {
@@ -42,7 +41,6 @@ Scope {
     ServiceLauncherMenu {}
     HomelabGlance {}
     ReconLauncherDialog {}
-    SecretsDialog {}
     PrinterDialog {}
     PanelLoader { component: NotificationPopup {} }
     PanelLoader { component: OnScreenDisplay {} }

@@ -19,7 +19,7 @@ Status legend: `[ ]` queued, `[~]` in progress, `[x]` shipped.
 | 2 | Clipboard history + snippets | quick action / dev | M | `Super+Alt+V` |
 | 3 | PR/issue quick-action board | dev | M | `Super+Alt+R` |
 | 4 | Eye-care break overlay | ambient | L | `Super+Alt+B` (snooze) |
-| 5 | ✅ Secrets surfacing (pass/command) | dev / security | M | `Super+Alt+W` |
+| 5 | ~~Secrets surfacing~~ — dropped (redundant) | dev / security | M | — |
 | 6 | Bar popups + inline graphs | glanceable | L-M | n/a (bar) |
 | 7 | Recon MCP backend (reconLauncher) | security | M | existing `Super+Alt+P` |
 
@@ -87,18 +87,12 @@ the 20-20-20 full-screen countdown. Lowest-effort item and a good warm-up.
 - **Prior art**: hovancik/stretchly (tiered schedule), nomandhoni-cs/blink-eye (20-20-20 overlay).
 - **Effort**: low.
 
-## 5. Secrets surfacing (pass/command)  `[x]`  — shipped
+## 5. Secrets surfacing (pass/command)  `[-]`  — dropped (built, then removed as redundant)
 
-Searchable `FloatingWindow` (`Super+Alt+W`) that lists secret entries and copies one to the
-clipboard, which then **auto-clears** after a timeout. Security model: the plaintext NEVER enters
-QML — listing yields entry NAMES only, and the copy happens entirely inside the shelled pipe
-(`pass show -c`, or a custom `showCommand | wl-copy`). Disabled by default until a backend is set.
-
-- **Built**: `services/Secrets.qml` + `modules/ii/secrets/SecretsDialog.qml`. Two backends:
-  `pass` (password-store, native copy+clear) and `command` (user-supplied list/show commands).
-- **Config**: `Config.options.secrets` (enable, backend, clearSeconds, store, list/show commands),
-  fully editable in **Settings → Custom → Secrets**. Keybind `Super+Alt+W`, IPC target `secrets`.
-- **Deps**: `pass` + `gnupg` (only for the `pass` backend), `wl-clipboard`.
+Built and shipped 2026-06-30, then removed at the owner's call: a desktop secrets picker
+overlaps existing tooling (gnome-keyring / browser password managers / `sops`+`pass` on the CLI)
+and didn't earn its surface area. Kept here only so it isn't re-proposed. Reference implementation
+lives in git history (commit `6ce0731`, reverted) if it's ever wanted back.
 
 ## 6. Bar popups + inline graphs  `[ ]`
 

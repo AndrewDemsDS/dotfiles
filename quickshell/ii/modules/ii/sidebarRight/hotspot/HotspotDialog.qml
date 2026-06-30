@@ -25,10 +25,9 @@ WindowDialog {
     readonly property bool dirty: fSsid !== Hotspot.ssid || fPassword !== Hotspot.password || fBand !== Hotspot.band
     readonly property bool passwordValid: fPassword.length >= 8
 
-    Component.onCompleted: {
-        Hotspot.refresh();
-        Hotspot.regenerateQr();
-    }
+    // refresh() is already driven by the dialog's onShownChanged in SidebarRightContent; here we
+    // only ensure the QR file is fresh for this open.
+    Component.onCompleted: Hotspot.regenerateQr()
     // Re-seed if the profile changes underneath us (e.g. first read completes after open).
     Connections {
         target: Hotspot
@@ -108,11 +107,15 @@ WindowDialog {
                 StyledText {
                     Layout.fillWidth: true
                     elide: Text.ElideRight
+                    // PlainText: the DHCP hostname is attacker-controlled (set by the client), so
+                    // never let StyledText's default AutoText render it as HTML/rich text.
+                    textFormat: Text.PlainText
                     text: (modelData.host && modelData.host.length > 0) ? modelData.host : modelData.mac
                     color: Appearance.colors.colOnSurfaceVariant
                     font.pixelSize: Appearance.font.pixelSize.smaller
                 }
                 StyledText {
+                    textFormat: Text.PlainText
                     text: modelData.ip
                     color: Appearance.colors.colSubtext
                     font.pixelSize: Appearance.font.pixelSize.smaller

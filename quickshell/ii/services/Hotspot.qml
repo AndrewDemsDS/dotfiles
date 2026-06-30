@@ -83,9 +83,10 @@ Singleton {
             Quickshell.execDetached(["notify-send", Translation.tr("Hotspot"), Translation.tr("No Wi-Fi device found."), "-a", "Shell", "-u", "critical"]);
             return;
         }
-        root.ssid = ssid;
-        root.password = password;
-        root.band = band;
+        // Don't mutate root.ssid/password/band here: if the delete half of the command
+        // below succeeds but the add fails, readProc would find no profile and these would
+        // be stuck at the attempted values, locking the dialog (dirty=false, Apply disabled).
+        // The values reach NM via the environment map; applyProc's refresh() reads them back.
         const wasEnabled = root.enabled;
         // Recreate the profile from scratch so stale settings can't linger.
         const cmd = 'nmcli connection delete "$NAME" 2>/dev/null;'
@@ -109,11 +110,15 @@ Singleton {
     function regenerateQr() {
         qrProc.exec({
             "environment": { "PAYLOAD": root.qrPayload, "OUT": root.qrPath },
-            "command": ["bash", "-c", 'mkdir -p "$(dirname "$OUT")" && qrencode -t PNG -o "$OUT" -s 10 -m 2 -l M "$PAYLOAD"']
+            // umask 0077: the PNG encodes the PSK in plaintext, so keep it owner-only (0600)
+            // rather than the default world-readable 0644 in ~/.cache.
+            "command": ["bash", "-c", 'umask 0077 && mkdir -p "$(dirname "$OUT")" && qrencode -t PNG -o "$OUT" -s 10 -m 2 -l M "$PAYLOAD"']
         });
     }
 
-    onQrPayloadChanged: regenerateQr()
+    // Qt.callLater coalesces the burst: a payload change touches ssid AND password, which would
+    // otherwise fire two regenerateQr() in one turn (the first with a half-updated payload).
+    onQrPayloadChanged: Qt.callLater(regenerateQr)
 
     // ── Processes ───────────────────────────────────────────────────────────
     Process {
@@ -136,9 +141,12 @@ Singleton {
                     return;
                 }
                 root.profileExists = true;
-                if (lines[0] !== undefined && lines[0].length > 0) root.ssid = lines[0];
+                if (lines[0].length > 0) root.ssid = lines[0];
                 if (lines[1] !== undefined && lines[1].length > 0) root.band = lines[1];
-                if (lines[2] !== undefined) root.password = lines[2];
+                // Keep the in-memory PSK if nmcli returns it empty (e.g. a polkit-restricted
+                // session can't read secrets even with -s) — an empty value would wrongly
+                // flip passwordValid false and disable Start.
+                if (lines[2] !== undefined && lines[2].length > 0) root.password = lines[2];
             }
         }
     }
@@ -147,7 +155,9 @@ Singleton {
         id: stateProc
         command: ["nmcli", "-t", "-f", "GENERAL.STATE", "connection", "show", root.profileName]
         stdout: StdioCollector {
-            onStreamFinished: root.enabled = text.includes("activated")
+            // ":activated" (terse FIELD:VALUE), not "activated" — the latter also matches the
+            // transient ":deactivated" right after a stop, leaving enabled stuck true.
+            onStreamFinished: root.enabled = text.includes(":activated")
         }
     }
 
@@ -192,11 +202,18 @@ Singleton {
 
     // ── Connected clients ────────────────────────────────────────────────────
     // Poll the dnsmasq leases ONLY while the hotspot is up; clear the list when it goes down.
+    // (The Timer below, triggeredOnStart, does the first poll when enabled flips true.)
     onEnabledChanged: {
         if (!root.enabled)
             root.clients = [];
-        else
-            clientsProc.running = true;
+    }
+
+    function pollClients() {
+        // iface goes through the environment, not interpolated into the shell string.
+        clientsProc.exec({
+            "environment": { "IFACE": root.iface },
+            "command": ["bash", "-c", 'f="/var/lib/NetworkManager/dnsmasq-$IFACE.leases"; [ -r "$f" ] && cat "$f" || true']
+        });
     }
 
     Timer {
@@ -204,12 +221,11 @@ Singleton {
         interval: 5000
         repeat: true
         triggeredOnStart: true
-        onTriggered: clientsProc.running = true
+        onTriggered: root.pollClients()
     }
 
     Process {
         id: clientsProc
-        command: ["bash", "-c", `f="/var/lib/NetworkManager/dnsmasq-${root.iface}.leases"; [ -r "$f" ] && cat "$f" || true`]
         stdout: StdioCollector {
             onStreamFinished: {
                 // dnsmasq lease line: "<expiry> <mac> <ip> <hostname> <client-id>". hostname is "*" if unknown.

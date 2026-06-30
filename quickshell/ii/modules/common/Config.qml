@@ -399,9 +399,13 @@ Singleton {
 
             property JsonObject notifications: JsonObject {
                 property int timeout: 7000
-                property JsonObject monitor: JsonObject {
+                // Pin notification popups to a specific monitor. Named forceMonitor to match the
+                // NotificationPopup widget and the Settings → Interface controls (the old name
+                // "monitor" matched nothing, so the setting was dead and the widget logged a
+                // null-deref every frame).
+                property JsonObject forceMonitor: JsonObject {
                     property bool enable: false
-                    property string name: "" // Name of the monitor to show notifications on, like "eDP-1". Find out with 'hyprctl monitors' command
+                    property string name: "" // Monitor to pin popups to, like "eDP-1". Find with 'hyprctl monitors'
                 }
             }
 

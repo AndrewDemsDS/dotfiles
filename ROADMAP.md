@@ -18,19 +18,24 @@ Each entry cites its upstream issue (`e4#NNNN` = end-4/dots-hyprland).
 
 ## Phase 1: Quick wins (low effort, self-contained warm-ups)
 
-### 1. Hyprshade / screen-shader quick toggle  `[ ]`  (e4#3252) · UNBLOCKED (use `hyprctl eval`)
-Screen-shader toggle (blue-light / CRT / vignette). Earlier marked blocked because `hyprshade 4.x`
-uses `hyprctl keyword`, which Hyprland 0.55's Lua parser rejects. **Resolved:** the Lua-parser
-replacement is `hyprctl eval`, so build the toggle around it directly, with **no `hyprshade` binary
-needed**:
-- apply: `hyprctl eval "hl.config({ decoration = { screen_shader = '<path>' } })"`
-- clear: same with `screen_shader = '[[EMPTY]]'`
-- read:  `hyprctl -j getoption decoration.screen_shader` (dot syntax)
-- **Where**: `services/Shader.qml` + toggle in 3 styles; ship a shader or two in `hypr/shaders/`.
-- **Config**: `shader.{enable, defaultShader, shaderDir}`. **Deps**: none (hyprctl present). Verify the
-  GLSL applies on Hyprland 0.55 first (`getoption` shows the path), per QA.md.
+### 1. Screen-shader quick toggle  `[x]`  (e4#3252) · SHIPPED
+A general-purpose GLSL screen shader applied via `decoration:screen_shader`. Built on the existing
+anti-flashbang infrastructure rather than the `hyprctl eval` path: `HyprlandConfig.setMany` writes
+the override to the Lua config (so it persists across reloads/reboots) and `HyprlandConfigOption`
+reads state back reactively. No `hyprshade` binary, no `hyprctl keyword`.
+- **Service**: `services/ScreenShader.qml` (apply/clear/toggle + `screenShader` IpcHandler), gated on
+  `light.shader.enable`; clears the shader when the feature is switched off.
+- **Shaders**: `services/screenShader/{bluelight,grayscale}.glsl` (GLES3, anti-flashbang header
+  format). Empty config path falls back to bluelight.
+- **Config**: `light.shader.{enable, path}`. Toggle registered in all 3 panel styles (android
+  delegate + wrapper, classic instantiation, waffle action center). Settings entry on the Custom page.
+- **Deps**: none (hyprctl present). Verified end-to-end on Hyprland 0.55.4: toggle sets/clears
+  `decoration:screen_shader`, `getoption` reflects it, persistent override stays clean.
+- Note: rapid back-to-back programmatic toggles race the async `getoption` read (shared with
+  anti-flashbang); harmless for human clicks. A shader picker (cycle a `shaderDir`) is a future add.
 ⚠ General rule for this system: any runtime Hyprland option change must use `hyprctl eval
-'hl.config({...})'`, NOT `hyprctl keyword` (disabled under the Lua parser). Audit other features.
+'hl.config({...})'` or `HyprlandConfig.set*`, NOT `hyprctl keyword` (disabled under the Lua parser).
+Audit done 2026-06-30: no `hyprctl keyword` usage in the tree.
 
 ### 2. Translator history + swap  `[ ]`  (e4#2759) · easy · improves existing
 Recent source/target language pairs remembered and pinned to the top; a swap button + hotkey.

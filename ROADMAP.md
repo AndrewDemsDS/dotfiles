@@ -19,7 +19,7 @@ Status legend: `[ ]` queued, `[~]` in progress, `[x]` shipped.
 | 2 | Clipboard history + snippets | quick action / dev | M | `Super+Alt+V` |
 | 3 | PR/issue quick-action board | dev | M | `Super+Alt+R` |
 | 4 | Eye-care break overlay | ambient | L | `Super+Alt+B` (snooze) |
-| 5 | Secrets surfacing (pass/sops) | dev / security | M | `Super+Alt+S` |
+| 5 | ✅ Secrets surfacing (pass/command) | dev / security | M | `Super+Alt+W` |
 | 6 | Bar popups + inline graphs | glanceable | L-M | n/a (bar) |
 | 7 | Recon MCP backend (reconLauncher) | security | M | existing `Super+Alt+P` |
 
@@ -87,18 +87,18 @@ the 20-20-20 full-screen countdown. Lowest-effort item and a good warm-up.
 - **Prior art**: hovancik/stretchly (tiered schedule), nomandhoni-cs/blink-eye (20-20-20 overlay).
 - **Effort**: low.
 
-## 5. Secrets surfacing (pass/sops)  `[ ]`
+## 5. Secrets surfacing (pass/command)  `[x]`  — shipped
 
-Greenfield: the research found no off-the-shelf prior art, but it fits the NixOS `sops-nix` setup.
-A palette provider (and/or its own dialog) that lists entries from `pass` or a `sops` file, decrypts
-one into the clipboard on select, and **auto-clears after a timeout**. Security-sensitive, so gate
-behind explicit opt-in and never log values.
+Searchable `FloatingWindow` (`Super+Alt+W`) that lists secret entries and copies one to the
+clipboard, which then **auto-clears** after a timeout. Security model: the plaintext NEVER enters
+QML — listing yields entry NAMES only, and the copy happens entirely inside the shelled pipe
+(`pass show -c`, or a custom `showCommand | wl-copy`). Disabled by default until a backend is set.
 
-- **Module**: provider inside feature 1, or `modules/ii/secrets/` + `services/Secrets.qml`. Shells
-  `pass show <name>` / `sops -d`, pipes to `wl-copy`, arms a `Timer` to `wl-copy --clear`.
-- **Deps**: `pass` or `sops` + `age` (sops/age already in the NixOS config), `wl-clipboard`.
-- **Notes**: keep names out of committed files; this reads from the untracked store only.
-- **Effort**: medium.
+- **Built**: `services/Secrets.qml` + `modules/ii/secrets/SecretsDialog.qml`. Two backends:
+  `pass` (password-store, native copy+clear) and `command` (user-supplied list/show commands).
+- **Config**: `Config.options.secrets` (enable, backend, clearSeconds, store, list/show commands),
+  fully editable in **Settings → Custom → Secrets**. Keybind `Super+Alt+W`, IPC target `secrets`.
+- **Deps**: `pass` + `gnupg` (only for the `pass` backend), `wl-clipboard`.
 
 ## 6. Bar popups + inline graphs  `[ ]`
 

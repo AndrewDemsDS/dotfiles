@@ -117,7 +117,7 @@ Item {
                         required property string modelData
                         readonly property bool isOn: HomeAssistant.isOn(tile.modelData)
                         readonly property color fg: tile.isOn ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colOnLayer2
-                        readonly property bool expandable: root.hasDetail(tile.modelData)
+                        readonly property bool expandable: root?.hasDetail(tile.modelData) ?? false
                         width: (tileFlow.width - tileFlow.spacing) / 2
                         height: 60
                         radius: Appearance.rounding.normal
@@ -128,7 +128,7 @@ Item {
                             anchors.margins: 10
                             spacing: 6
                             MaterialSymbol {
-                                text: root.iconFor(tile.modelData)
+                                text: root?.iconFor(tile.modelData) ?? ""
                                 iconSize: 24
                                 color: tile.fg
                             }

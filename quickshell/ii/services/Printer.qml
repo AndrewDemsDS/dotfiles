@@ -74,7 +74,15 @@ Singleton {
     function printClipboard() {
         if (root.defaultPrinter.length === 0)
             return;
-        Quickshell.execDetached(["bash", "-c", `wl-paste --no-newline | lp ${root.defaultPrinter.length > 0 ? "-d " + root.defaultPrinter : ""}`]);
+        // Pass the printer name via the environment, never interpolated into the shell
+        // string, so a crafted printer name can't inject commands (QA.md step 7). The
+        // pipe needs a shell; the value reaches lp as a single quoted argument.
+        Quickshell.execDetached({
+            "command": ["bash", "-c", 'wl-paste --no-newline | lp -d "$PRINTER"'],
+            "environment": {
+                "PRINTER": root.defaultPrinter
+            }
+        });
     }
     function openQueue() {
         const cmd = Config.options.printer.queueCommand;

@@ -265,51 +265,49 @@ Singleton {
 
     Process {
         id: updateConnectionType
-        property string buffer
         command: ["sh", "-c", "nmcli -t -f TYPE,STATE d status && nmcli -t -f CONNECTIVITY g"]
         running: true
+        // Re-trigger only restarts the process; StdioCollector below parses the FULL output
+        // atomically on completion, so rapid nmcli-monitor events can't deliver a truncated
+        // snapshot (which used to drop the ethernet line and flip the bar icon).
         function startCheck() {
-            buffer = "";
             updateConnectionType.running = true;
         }
-        stdout: SplitParser {
-            onRead: data => {
-                updateConnectionType.buffer += data + "\n";
-            }
-        }
-        onExited: (exitCode, exitStatus) => {
-            const lines = updateConnectionType.buffer.trim().split('\n');
-            const connectivity = lines.pop() // none, limited, full
-            let hasEthernet = false;
-            let hasWifi = false;
-            let wifiStatus = "disconnected";
-            lines.forEach(line => {
-                if (line.includes("ethernet") && line.includes("connected"))
-                    hasEthernet = true;
-                else if (line.includes("wifi:")) {
-                    if (line.includes("disconnected")) {
-                        wifiStatus = "disconnected"
-                    }
-                    else if (line.includes("connected")) {
-                        hasWifi = true;
-                        wifiStatus = "connected"
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const lines = text.trim().split('\n');
+                const connectivity = lines.pop() // none, limited, full
+                let hasEthernet = false;
+                let hasWifi = false;
+                let wifiStatus = "disconnected";
+                lines.forEach(line => {
+                    if (line.includes("ethernet") && line.includes("connected"))
+                        hasEthernet = true;
+                    else if (line.includes("wifi:")) {
+                        if (line.includes("disconnected")) {
+                            wifiStatus = "disconnected"
+                        }
+                        else if (line.includes("connected")) {
+                            hasWifi = true;
+                            wifiStatus = "connected"
 
-                        if (connectivity === "limited") {
-                            hasWifi = false;
-                            wifiStatus = "limited"
+                            if (connectivity === "limited") {
+                                hasWifi = false;
+                                wifiStatus = "limited"
+                            }
+                        }
+                        else if (line.includes("connecting")) {
+                            wifiStatus = "connecting"
+                        }
+                        else if (line.includes("unavailable")) {
+                            wifiStatus = "disabled"
                         }
                     }
-                    else if (line.includes("connecting")) {
-                        wifiStatus = "connecting"
-                    }
-                    else if (line.includes("unavailable")) {
-                        wifiStatus = "disabled"
-                    }
-                }
-            });
-            root.wifiStatus = wifiStatus;
-            root.ethernet = hasEthernet;
-            root.wifi = hasWifi;
+                });
+                root.wifiStatus = wifiStatus;
+                root.ethernet = hasEthernet;
+                root.wifi = hasWifi;
+            }
         }
     }
 

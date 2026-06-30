@@ -36,6 +36,7 @@ AbstractQuickPanel {
             }
         }
         NightLight {}
+        ScreenShader {}
         GameMode {}
         IdleInhibitor {}
         EasyEffectsToggle {}

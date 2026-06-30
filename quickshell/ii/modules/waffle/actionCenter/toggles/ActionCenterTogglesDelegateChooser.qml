@@ -30,6 +30,13 @@ DelegateChooser {
         }
     }
     DelegateChoice {
+        roleValue: "screenShader"
+        ActionCenterToggleButton {
+            toggleModel: ScreenShaderToggle {}
+            icon: "wand"
+        }
+    }
+    DelegateChoice {
         roleValue: "bluetooth"
         ActionCenterToggleButton {
             toggleModel: BluetoothToggle {}

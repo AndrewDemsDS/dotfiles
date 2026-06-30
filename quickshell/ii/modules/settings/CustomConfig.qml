@@ -708,4 +708,24 @@ ContentPage {
             onTextChanged: Config.options.printer.queueCommand = text
         }
     }
+
+    // ── Screen shader ───────────────────────────────────────────────
+    ContentSection {
+        icon: "gradient"
+        title: Translation.tr("Screen shader")
+
+        ConfigSwitch {
+            text: Translation.tr("Enable screen shader toggle")
+            checked: Config.options.light.shader.enable
+            onCheckedChanged: Config.options.light.shader.enable = checked
+            StyledToolTip { text: Translation.tr("Applies a GLSL shader via decoration:screen_shader; a quick toggle shows in all 3 panel styles") }
+        }
+        MaterialTextArea {
+            Layout.fillWidth: true
+            placeholderText: Translation.tr("Shader path (empty = bundled blue-light; e.g. services/screenShader/grayscale.glsl)")
+            text: Config.options.light.shader.path
+            wrapMode: TextEdit.Wrap
+            onTextChanged: Config.options.light.shader.path = text
+        }
+    }
 }

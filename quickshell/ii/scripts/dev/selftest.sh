@@ -12,9 +12,14 @@ PID="$(qs list --all 2>/dev/null | awk '/Process ID:/{p=$3} /Shell ID: ii$/{prin
 [ -z "$PID" ] && PID="$(pgrep -f 'quickshell -c ii' | head -1)"
 [ -z "$PID" ] && { echo "No running 'qs' shell found."; exit 1; }
 
-pass=0; fail=0; warn=0
-G=$'\033[32m'; R=$'\033[31m'; Y=$'\033[33m'; N=$'\033[0m'
+pass=0; fail=0; warn=0; skip=0
+G=$'\033[32m'; R=$'\033[31m'; Y=$'\033[33m'; D=$'\033[2m'; N=$'\033[0m'
 ipc() { qs ipc --pid "$PID" call "$@" 2>/dev/null; }
+
+# Opt-in features (enable=false in config.json) legitimately don't register/activate
+# their IPC service, so a hard check would false-fail. Skip them unless turned on.
+CFG="$HOME/.config/illogical-impulse/config.json"
+feat_on() { [ -f "$CFG" ] && [ "$(jq -r --arg k "$1" '(.[$k].enable) // false' "$CFG" 2>/dev/null)" = "true" ]; }
 
 ck() { # name  regex  ipc-args...
   local name="$1" re="$2"; shift 2
@@ -28,6 +33,11 @@ wk() { # soft: warn instead of fail
   if echo "$out" | grep -qE "$re"; then echo "  ${G}✓${N} $name"; pass=$((pass+1))
   else echo "  ${Y}⚠${N} $name — ${out:-<needs external dep>}"; warn=$((warn+1)); fi
 }
+ckopt() { # config-gated: hard-check when the feature is enabled, else clean skip
+  local name="$1" re="$2" feat="$3"; shift 3
+  if feat_on "$feat"; then ck "$name" "$re" "$@"
+  else echo "  ${D}–${N} $name ${D}— ${feat}.enable=false${N}"; skip=$((skip+1)); fi
+}
 
 SHOW="$(qs ipc --pid "$PID" show 2>/dev/null)"
 tgt() { # assert an IPC target is registered (for services without a status())
@@ -38,8 +48,8 @@ tgt() { # assert an IPC target is registered (for services without a status())
 echo "Quickshell self-test — pid $PID"
 echo "— services —"
 ck "Home Assistant online"  'online=true'      homeAssistant status
-ck "UPS reading valid"      'valid=true'        ups status
-ck "NAS reachable"          'reachable=true'    nas status
+ckopt "UPS reading valid"   'valid=true'        upsMonitor  ups status
+ckopt "NAS reachable"       'reachable=true'    nasGuard    nas status
 ck "News has items"         'items=[1-9]'       news status
 ck "VPN status present"     'ssid='             vpnStatus status
 ck "Dotfiles drift"         '(clean|changed)'   dotfilesDrift status
@@ -70,5 +80,5 @@ else
 fi
 
 echo
-echo "${pass} passed, ${warn} warnings, ${fail} failed"
+echo "${pass} passed, ${warn} warnings, ${skip} skipped, ${fail} failed"
 [ "$fail" -eq 0 ]

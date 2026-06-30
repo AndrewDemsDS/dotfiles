@@ -18,14 +18,18 @@ Each entry cites its upstream issue (`e4#NNNN` = end-4/dots-hyprland).
 
 ## Phase 1 — Quick wins (low effort, self-contained warm-ups)
 
-### 1. Hyprshade quick toggle  `[-]`  (e4#3252) — BLOCKED
-Screen-shader toggle (blue-light / CRT / vignette). **Blocked on this system:** Hyprland 0.55.4 uses
-the non-legacy config parser, which rejects `hyprctl keyword` (`keyword can't work with non-legacy
-parsers`). `hyprshade` applies shaders *via* `hyprctl keyword`, so it's a silent no-op here — verified
-empirically (the option `decoration:screen_shader` stays `set: false` after `hyprshade on`). Revisit if
-Hyprland restores runtime `keyword`, or if a non-keyword shader-set path appears.
-⚠ Broader implication: `hyprctl keyword` is disabled shell-wide — audit any existing/planned feature
-that relies on it (runtime option changes), and prefer config-file edits + `hyprctl reload` instead.
+### 1. Hyprshade / screen-shader quick toggle  `[ ]`  (e4#3252) — UNBLOCKED (use `hyprctl eval`)
+Screen-shader toggle (blue-light / CRT / vignette). Earlier marked blocked because `hyprshade 4.x`
+uses `hyprctl keyword`, which Hyprland 0.55's Lua parser rejects. **Resolved:** the Lua-parser
+replacement is `hyprctl eval`, so build the toggle around it directly — **no `hyprshade` binary needed**:
+- apply: `hyprctl eval "hl.config({ decoration = { screen_shader = '<path>' } })"`
+- clear: same with `screen_shader = '[[EMPTY]]'`
+- read:  `hyprctl -j getoption decoration.screen_shader` (dot syntax)
+- **Where**: `services/Shader.qml` + toggle in 3 styles; ship a shader or two in `hypr/shaders/`.
+- **Config**: `shader.{enable, defaultShader, shaderDir}`. **Deps**: none (hyprctl present). Verify the
+  GLSL applies on Hyprland 0.55 first (`getoption` shows the path), per QA.md.
+⚠ General rule for this system: any runtime Hyprland option change must use `hyprctl eval
+'hl.config({...})'`, NOT `hyprctl keyword` (disabled under the Lua parser). Audit other features.
 
 ### 2. Translator history + swap  `[ ]`  (e4#2759) — easy · improves existing
 Recent source/target language pairs remembered and pinned to the top; a swap button + hotkey.

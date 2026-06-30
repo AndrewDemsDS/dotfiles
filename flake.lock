@@ -16,27 +16,9 @@
         "type": "github"
       }
     },
-    "quickshell": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1773916211,
-        "narHash": "sha256-FyO/nPw2CZn35YL22Xl8V5qkTTANwKoNw2MIAIcmZH0=",
-        "owner": "quickshell-mirror",
-        "repo": "quickshell",
-        "rev": "7511545ee20664e3b8b8d3322c0ffe7567c56f7a",
-        "type": "github"
-      },
-      "original": {
-        "owner": "quickshell-mirror",
-        "repo": "quickshell",
-        "rev": "7511545ee20664e3b8b8d3322c0ffe7567c56f7a",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs",
-        "quickshell": "quickshell"
+        "nixpkgs": "nixpkgs"
       }
     }
   },

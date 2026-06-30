@@ -2,8 +2,6 @@
 # Provides packages + the iiPython venv activation + GTK dark-mode dconf seeding.
 # It does NOT manage the dotfiles themselves (no home.file/xdg.configFile for hypr or
 # quickshell) — those stay the live ~/.config git checkout so Quickshell hot-reload works.
-# Closes over the quickshell source (the flake input) passed in by flake.nix.
-{ quickshellSrc }:
 { config, lib, pkgs, ... }:
 let
   # The interpreter that backs ii's python scripts. end-4 builds a mutable venv at
@@ -22,15 +20,11 @@ in
 {
   # ---- illogical-impulse / ii Quickshell runtime (from docs/09 dep map) ----
   home.packages = with pkgs; [
-    # Quickshell: nixpkgs build (Polkit + all services + Qt QML wrapping) with the v0.2.1 source.
-    # 0.2.1's crash reporter needs breakpad (not in the 0.3 derivation) → disable it.
-    (pkgs.quickshell.overrideAttrs (old: {
-      version = "0.2.1";
-      src = quickshellSrc;
-      cmakeFlags = (old.cmakeFlags or []) ++ [ "-DCRASH_REPORTER=OFF" ];
-      # quickshell auto-enables the Polkit service when polkit-qt is found at build time
-      buildInputs = (old.buildInputs or []) ++ [ pkgs.kdePackages.polkit-qt-1 ];
-    }))
+    # Quickshell: plain nixpkgs build, now 0.3.0 (Polkit service + all services + Qt QML wrapping
+    # are built in upstream — the 0.2.1-source override with -DCRASH_REPORTER=OFF + polkit-qt-1 is
+    # no longer needed). The ii config is 0.3-ready (docs/13 Phase 1: all per-monitor Variants use
+    # `required modelData`, shell.qml has `//@ pragma ShellId ii`).
+    quickshell
     qt6.qtbase qt6.qtdeclarative qt6.qtsvg qt6.qt5compat qt6.qtimageformats
     qt6.qtmultimedia qt6.qtpositioning qt6.qtquicktimeline qt6.qtsensors
     qt6.qttools qt6.qttranslations qt6.qtvirtualkeyboard qt6.qtwayland

@@ -1,4 +1,7 @@
 //@ pragma UseQApplication
+// ShellId fixes the per-shell state/cache dir id on Quickshell 0.3+ (which stopped canonicalizing
+// the config path); without it the by-shell/<id> dir would move on the 0.2.1->0.3 switch. Inert on 0.2.1.
+//@ pragma ShellId ii
 //@ pragma Env QS_NO_RELOAD_POPUP=1
 //@ pragma Env QT_QUICK_CONTROLS_STYLE=Basic
 //@ pragma Env QT_QUICK_FLICKABLE_WHEEL_DECELERATION=10000

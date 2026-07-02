@@ -99,10 +99,6 @@ WindowDialog {
                 GlobalStates.sidebarRightOpen = false;
             }
         }
-        DialogButton {
-            buttonText: Translation.tr("Refresh")
-            onClicked: VpnStatus.refresh()
-        }
         Item {
             Layout.fillWidth: true
         }

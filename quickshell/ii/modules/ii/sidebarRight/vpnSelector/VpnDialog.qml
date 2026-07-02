@@ -24,7 +24,7 @@ WindowDialog {
     ConfigSwitch {
         Layout.fillWidth: true
         buttonIcon: Config.options.vpnStatus.autoConnect ? "auto_mode" : "vpn_key_off"
-        text: Translation.tr("Auto VPN — connect off home, disconnect at home")
+        text: Translation.tr("Auto VPN off home networks")
         checked: Config.options.vpnStatus.autoConnect
         onCheckedChanged: {
             if (checked !== Config.options.vpnStatus.autoConnect) {

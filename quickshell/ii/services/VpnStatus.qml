@@ -187,8 +187,7 @@ Singleton {
                 let profiles = [];
                 const lines = text.trim().length > 0 ? text.trim().split("\n") : [];
                 for (const line of lines) {
-                    // nmcli -t escapes literal colons as "\:"; split on unescaped ones.
-                    const f = line.split(/(?<!\\):/).map(s => s.replace(/\\:/g, ":"));
+                    const f = line.split(":");
                     const type = f[2] ?? "";
                     if (type === "wireguard" || type === "vpn" || type === "tun") {
                         conns.push(f[0]);

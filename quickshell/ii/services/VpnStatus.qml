@@ -216,9 +216,18 @@ Singleton {
         actionProc.running = true;
     }
 
+    // Single-quote a value for embedding in a bash -c command.
+    function _sq(s) {
+        return "'" + String(s).replace(/'/g, "'\\''") + "'";
+    }
+    // Connect exclusively: NetworkManager happily runs multiple VPNs at once, so
+    // bring down any *other* active vpn/wg/tun first, then bring up the target.
     function connectProfile(name) {
-        if (name && name.length > 0)
-            root._run(["nmcli", "connection", "up", name], Translation.tr("Connect %1").arg(name));
+        if (!name || name.length === 0)
+            return;
+        const downs = (root.activeVpnNames ?? []).filter(n => n !== name).map(n => "nmcli connection down " + root._sq(n));
+        const cmd = downs.concat(["nmcli connection up " + root._sq(name)]).join(" ; ");
+        root._run(["bash", "-c", cmd], Translation.tr("Connect %1").arg(name));
     }
     function disconnectProfile(name) {
         if (name && name.length > 0)

@@ -7,71 +7,94 @@ import QtQuick.Layouts
 import Quickshell
 
 /*
- * VPN picker — long-press/menu of the VPN quick toggle. Lists available NM VPN/WireGuard
- * connections; selecting one sets it as the default the toggle controls
- * (Config.options.vpnStatus.toggleConnection, persisted). "Automatic" clears the override.
+ * VPN manager — the menu of the VPN quick toggle. Lists NM VPN/WireGuard profiles
+ * with per-profile connect/disconnect, set-as-toggle-default, start-on-login,
+ * rename and delete (see VpnProfileItem). Also toggles auto-connect (which also
+ * auto-disconnects on trusted networks) and imports .conf/.ovpn profile files.
  */
 WindowDialog {
     id: root
-    backgroundHeight: 480
+    backgroundHeight: 620
 
     WindowDialogTitle {
-        text: Translation.tr("Choose VPN")
+        text: Translation.tr("VPN profiles")
     }
     WindowDialogSeparator {}
+
+    ConfigSwitch {
+        Layout.fillWidth: true
+        buttonIcon: Config.options.vpnStatus.autoConnect ? "auto_mode" : "vpn_key_off"
+        text: Translation.tr("Auto VPN — connect off home, disconnect at home")
+        checked: Config.options.vpnStatus.autoConnect
+        onCheckedChanged: {
+            if (checked !== Config.options.vpnStatus.autoConnect) {
+                Config.options.vpnStatus.autoConnect = checked;
+                if (checked)
+                    VpnStatus.refresh();
+            }
+        }
+    }
 
     ListView {
         Layout.fillHeight: true
         Layout.fillWidth: true
-        Layout.topMargin: -15
-        Layout.bottomMargin: -16
+        Layout.topMargin: -6
+        Layout.bottomMargin: -8
         Layout.leftMargin: -Appearance.rounding.large
         Layout.rightMargin: -Appearance.rounding.large
         clip: true
         spacing: 0
 
         model: ScriptModel {
-            values: [""].concat(VpnStatus.vpnConnections)
+            values: VpnStatus.vpnProfiles
         }
-        delegate: DialogListItem {
-            required property string modelData
-            readonly property bool isAuto: modelData.length === 0
-            readonly property bool selected: Config.options.vpnStatus.toggleConnection === modelData
-            readonly property bool isActive: !isAuto && VpnStatus.vpnUp && VpnStatus.vpnName === modelData
+        delegate: VpnProfileItem {
             width: ListView.view.width
-            onClicked: {
-                Config.options.vpnStatus.toggleConnection = modelData;
-                VpnStatus.refresh();
+        }
+
+        StyledText { // empty state
+            anchors.centerIn: parent
+            visible: VpnStatus.vpnProfiles.length === 0
+            text: Translation.tr("No VPN profiles.\nImport a .conf or .ovpn below.")
+            horizontalAlignment: Text.AlignHCenter
+            color: Appearance.colors.colSubtext
+            font.pixelSize: Appearance.font.pixelSize.smaller
+        }
+    }
+
+    WindowDialogSeparator {}
+
+    RowLayout { // Import a WireGuard (.conf) / OpenVPN (.ovpn) file
+        Layout.fillWidth: true
+        spacing: 6
+        MaterialTextField {
+            id: importField
+            Layout.fillWidth: true
+            placeholderText: Translation.tr("Path to .conf / .ovpn to import")
+            onAccepted: {
+                VpnStatus.importConfig(text);
+                text = "";
             }
-            contentItem: RowLayout {
-                spacing: 12
-                MaterialSymbol {
-                    text: selected ? "radio_button_checked" : "radio_button_unchecked"
-                    iconSize: Appearance.font.pixelSize.larger
-                    color: selected ? Appearance.colors.colPrimary : Appearance.colors.colOnSurfaceVariant
-                }
-                MaterialSymbol {
-                    text: isAuto ? "auto_mode" : (isActive ? "vpn_lock" : "vpn_key")
-                    iconSize: Appearance.font.pixelSize.larger
-                    color: Appearance.colors.colOnSurfaceVariant
-                }
-                StyledText {
-                    Layout.fillWidth: true
-                    text: isAuto ? Translation.tr("Automatic (current or first)") : modelData
-                    color: Appearance.colors.colOnSurfaceVariant
-                }
-                StyledText {
-                    visible: isActive
-                    text: Translation.tr("active")
-                    color: Appearance.colors.colPrimary
-                    font.pixelSize: Appearance.font.pixelSize.smaller
-                }
+        }
+        DialogButton {
+            buttonText: Translation.tr("Import")
+            enabled: importField.text.trim().length > 0
+            onClicked: {
+                VpnStatus.importConfig(importField.text);
+                importField.text = "";
             }
         }
     }
 
     WindowDialogSeparator {}
     WindowDialogButtonRow {
+        DialogButton {
+            buttonText: Translation.tr("Refresh")
+            onClicked: VpnStatus.refresh()
+        }
+        Item {
+            Layout.fillWidth: true
+        }
         DialogButton {
             buttonText: Translation.tr("Close")
             onClicked: root.dismiss()

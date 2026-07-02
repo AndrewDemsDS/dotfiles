@@ -21,7 +21,9 @@ Singleton {
     // VPN (nmcli)
     property bool vpnUp: false
     property string vpnName: ""
-    property var vpnConnections: [] // available NM wireguard/vpn connection names
+    property var vpnConnections: [] // available NM wireguard/vpn connection names (for the toggle fallback)
+    property var activeVpnNames: [] // names of every currently-active vpn/wg/tun connection
+    property var vpnProfiles: [] // detailed list for the manager: [{name, uuid, type, autoconnect}]
 
     // Which connection the quick-toggle acts on. Configurable, with sensible fallbacks:
     //   config vpnStatus.toggleConnection  →  currently-up VPN  →  first available  →  none
@@ -153,40 +155,116 @@ Singleton {
             onStreamFinished: {
                 let up = false;
                 let name = "";
+                let active = [];
                 const lines = text.trim().length > 0 ? text.trim().split("\n") : [];
                 for (const line of lines) {
                     const f = line.split(":");
                     const type = f[1] ?? "";
                     const state = f[2] ?? "";
                     if ((type === "wireguard" || type === "vpn" || type === "tun") && state === "activated") {
-                        up = true;
-                        name = f[0];
-                        break;
+                        active.push(f[0]);
+                        if (!up) {
+                            up = true;
+                            name = f[0];
+                        }
                     }
                 }
                 root.vpnUp = up;
                 root.vpnName = name;
+                root.activeVpnNames = active;
             }
         }
     }
 
-    // Enumerate available VPN/WireGuard connection profiles (for the toggle fallback).
+    // Enumerate available VPN/WireGuard connection profiles (names for the toggle fallback,
+    // plus detailed rows for the manager dialog).
     Process {
         id: listProc
-        command: ["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"]
+        command: ["nmcli", "-t", "-f", "NAME,UUID,TYPE,AUTOCONNECT", "connection", "show"]
         stdout: StdioCollector {
             onStreamFinished: {
                 let conns = [];
+                let profiles = [];
                 const lines = text.trim().length > 0 ? text.trim().split("\n") : [];
                 for (const line of lines) {
-                    const f = line.split(":");
-                    const type = f[1] ?? "";
-                    if (type === "wireguard" || type === "vpn" || type === "tun")
+                    // nmcli -t escapes literal colons as "\:"; split on unescaped ones.
+                    const f = line.split(/(?<!\\):/).map(s => s.replace(/\\:/g, ":"));
+                    const type = f[2] ?? "";
+                    if (type === "wireguard" || type === "vpn" || type === "tun") {
                         conns.push(f[0]);
+                        profiles.push({
+                            name: f[0],
+                            uuid: f[1] ?? "",
+                            type: type,
+                            autoconnect: (f[3] ?? "") === "yes"
+                        });
+                    }
                 }
                 root.vpnConnections = conns;
+                root.vpnProfiles = profiles;
             }
         }
+    }
+
+    // ── Profile management (all non-root; user has NM network-control perm) ───
+    // A single serialized action process: run a command, then refresh. Failures notify.
+    property string _actionLabel: ""
+    function _run(cmd, label) {
+        if (actionProc.running) // avoid clobbering an in-flight action
+            return;
+        root._actionLabel = label ?? "";
+        actionProc.command = cmd;
+        actionProc.running = true;
+    }
+
+    function connectProfile(name) {
+        if (name && name.length > 0)
+            root._run(["nmcli", "connection", "up", name], Translation.tr("Connect %1").arg(name));
+    }
+    function disconnectProfile(name) {
+        if (name && name.length > 0)
+            root._run(["nmcli", "connection", "down", name], Translation.tr("Disconnect %1").arg(name));
+    }
+    function deleteProfile(name) {
+        if (name && name.length > 0)
+            root._run(["nmcli", "connection", "delete", name], Translation.tr("Delete %1").arg(name));
+    }
+    function setProfileAutoconnect(name, on) {
+        if (name && name.length > 0)
+            root._run(["nmcli", "connection", "modify", name, "connection.autoconnect", on ? "yes" : "no"], "");
+    }
+    function renameProfile(name, newName) {
+        if (name && name.length > 0 && newName && newName.length > 0 && newName !== name)
+            root._run(["nmcli", "connection", "modify", name, "connection.id", newName], Translation.tr("Rename to %1").arg(newName));
+    }
+    // Import a WireGuard (.conf) or OpenVPN (.ovpn) profile file.
+    function importConfig(path) {
+        const p = (path ?? "").trim().replace(/^file:\/\//, "").replace(/^~/, FileUtils.trimFileProtocol(Directories.home));
+        if (p.length === 0)
+            return;
+        const lower = p.toLowerCase();
+        const kind = (lower.endsWith(".ovpn") || lower.endsWith(".openvpn")) ? "openvpn" : "wireguard";
+        root._run(["nmcli", "connection", "import", "type", kind, "file", p], Translation.tr("Import %1").arg(kind));
+    }
+
+    Process {
+        id: actionProc
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0 && root._actionLabel.length > 0) {
+                Quickshell.execDetached(["notify-send", Translation.tr("VPN"), Translation.tr("Failed: %1").arg(root._actionLabel), "-a", "Shell", "-u", "critical"]);
+            } else if (root._actionLabel.length > 0) {
+                Quickshell.execDetached(["notify-send", Translation.tr("VPN"), root._actionLabel, "-a", "Shell", "-u", "low"]);
+            }
+            root._actionLabel = "";
+            root.refresh();
+        }
+    }
+
+    // Flip auto-connect (and auto-disconnect on trusted networks) on/off. Backs the quick toggle.
+    function toggleAuto() {
+        Config.options.vpnStatus.autoConnect = !Config.options.vpnStatus.autoConnect;
+        if (Config.options.vpnStatus.autoConnect)
+            root.refresh(); // re-evaluate immediately so it acts on the current network
     }
 
     Process {
@@ -256,6 +334,24 @@ Singleton {
         }
         function toggle(): void {
             root.toggle();
+        }
+        function toggleAuto(): void {
+            root.toggleAuto();
+        }
+        function connect(name: string): void {
+            root.connectProfile(name);
+        }
+        function disconnect(name: string): void {
+            root.disconnectProfile(name);
+        }
+        function remove(name: string): void {
+            root.deleteProfile(name);
+        }
+        function importFile(path: string): void {
+            root.importConfig(path);
+        }
+        function profiles(): string {
+            return root.vpnProfiles.map(p => `${p.name} [${p.type}]${root.activeVpnNames.indexOf(p.name) !== -1 ? " *active" : ""}${p.autoconnect ? " auto" : ""}`).join("\n");
         }
         function status(): string {
             return `ssid=${root.ssid} vpn=${root.vpnUp ? root.vpnName : "down"} target=${root.toggleTarget} trusted=${root.trusted} auto=${Config.options.vpnStatus.autoConnect} ip=${root.localIp} pub=${root.publicIp}`;

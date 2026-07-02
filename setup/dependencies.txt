@@ -13,6 +13,9 @@ grim                    # screenshots (test-ui / visual verification)
 slurp                   # region select (pairs with grim)
 wl-clipboard            # wl-copy / wl-paste — recon + local-LLM + print-clipboard
 jq                      # misc JSON in helper scripts
+networkmanager-openvpn   # VPN manager: import/connect .ovpn (OpenVPN) profiles via nmcli
+openvpn                 # VPN manager: OpenVPN backend for the above
+wireguard-tools         # VPN manager: WireGuard tooling (nmcli imports .conf natively)
 
 # --- optional: security / recon launcher (Super+Alt+P). AUR / BlackArch ---
 # (skip these on a plain clone if you don't use the recon launcher)

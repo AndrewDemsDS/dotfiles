@@ -245,6 +245,23 @@ Singleton {
         const kind = (lower.endsWith(".ovpn") || lower.endsWith(".openvpn")) ? "openvpn" : "wireguard";
         root._run(["nmcli", "connection", "import", "type", kind, "file", p], Translation.tr("Import %1").arg(kind));
     }
+    // Open the system file picker (kdialog, as the wallpaper picker uses) to choose a
+    // profile file, then import it.
+    function browseImport() {
+        browseProc.command = ["kdialog", "--getopenfilename", FileUtils.trimFileProtocol(Directories.home), "*.conf *.ovpn *.wg|" + Translation.tr("VPN profiles (*.conf, *.ovpn)"), "--title", Translation.tr("Import VPN profile")];
+        browseProc.running = true;
+    }
+
+    Process {
+        id: browseProc
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const p = text.trim();
+                if (p.length > 0)
+                    root.importConfig(p);
+            }
+        }
+    }
 
     Process {
         id: actionProc

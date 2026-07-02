@@ -77,6 +77,10 @@ WindowDialog {
             }
         }
         DialogButton {
+            buttonText: Translation.tr("Browse…")
+            onClicked: VpnStatus.browseImport()
+        }
+        DialogButton {
             buttonText: Translation.tr("Import")
             enabled: importField.text.trim().length > 0
             onClicked: {
@@ -88,6 +92,13 @@ WindowDialog {
 
     WindowDialogSeparator {}
     WindowDialogButtonRow {
+        DialogButton {
+            buttonText: Translation.tr("Details")
+            onClicked: {
+                Quickshell.execDetached(["bash", "-c", Config.options.apps.network]);
+                GlobalStates.sidebarRightOpen = false;
+            }
+        }
         DialogButton {
             buttonText: Translation.tr("Refresh")
             onClicked: VpnStatus.refresh()

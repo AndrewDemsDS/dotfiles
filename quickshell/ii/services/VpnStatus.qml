@@ -81,6 +81,10 @@ Singleton {
             Quickshell.execDetached(["notify-send", Translation.tr("VPN"), Translation.tr("No VPN connection set (configure vpnStatus.toggleConnection)"), "-a", "Shell", "-u", "low"]);
             return;
         }
+        if (root.vpnUp)
+            root._autoSuppressKey = root._netKey(); // manual off → don't let auto re-up on this network
+        else
+            root._autoSuppressKey = "";
         toggleProc.command = ["nmcli", "connection", root.vpnUp ? "down" : "up", t];
         toggleProc.running = true;
     }
@@ -91,6 +95,15 @@ Singleton {
     // for the managed connection is turned off the first time auto-VPN acts.
     property string _autoTunedTarget: ""
     property string _autoMsg: ""
+    // Network the user last manually turned the VPN off on; while still on it,
+    // auto-VPN won't re-connect (respects the manual override). Cleared when they
+    // move networks or manually connect.
+    property string _autoSuppressKey: ""
+
+    // Identifies the current network for override tracking (SSID + local subnet).
+    function _netKey() {
+        return `${root.ssid}|${root.subnet}`;
+    }
 
     function _applyAuto() {
         const opt = Config.options.vpnStatus;
@@ -99,6 +112,9 @@ Singleton {
         const t = root.toggleTarget;
         if (t.length === 0 || root.localIp.length === 0) // no target, or network not known yet
             return;
+        // Left the network the manual-off happened on → the override no longer applies.
+        if (root._autoSuppressKey.length > 0 && root._autoSuppressKey !== root._netKey())
+            root._autoSuppressKey = "";
         // Stop NetworkManager from auto-raising this connection on a home network.
         if (root._autoTunedTarget !== t) {
             root._autoTunedTarget = t;
@@ -109,6 +125,9 @@ Singleton {
             autoProc.command = ["nmcli", "connection", "down", root.vpnName.length > 0 ? root.vpnName : t];
             autoProc.running = true;
         } else if (!root.trusted && !root.vpnUp) {
+            // Respect a manual disconnect on this network — don't fight the user.
+            if (root._autoSuppressKey.length > 0 && root._autoSuppressKey === root._netKey())
+                return;
             root._autoMsg = Translation.tr("Connected on an untrusted network");
             autoProc.command = ["nmcli", "connection", "up", t];
             autoProc.running = true;
@@ -225,13 +244,16 @@ Singleton {
     function connectProfile(name) {
         if (!name || name.length === 0)
             return;
+        root._autoSuppressKey = ""; // manual connect clears any manual-off override
         const downs = (root.activeVpnNames ?? []).filter(n => n !== name).map(n => "nmcli connection down " + root._sq(n));
         const cmd = downs.concat(["nmcli connection up " + root._sq(name)]).join(" ; ");
         root._run(["bash", "-c", cmd], Translation.tr("Connect %1").arg(name));
     }
     function disconnectProfile(name) {
-        if (name && name.length > 0)
+        if (name && name.length > 0) {
+            root._autoSuppressKey = root._netKey(); // manual off → auto won't re-up on this network
             root._run(["nmcli", "connection", "down", name], Translation.tr("Disconnect %1").arg(name));
+        }
     }
     function deleteProfile(name) {
         if (name && name.length > 0)
@@ -288,8 +310,10 @@ Singleton {
     // Flip auto-connect (and auto-disconnect on trusted networks) on/off. Backs the quick toggle.
     function toggleAuto() {
         Config.options.vpnStatus.autoConnect = !Config.options.vpnStatus.autoConnect;
-        if (Config.options.vpnStatus.autoConnect)
+        if (Config.options.vpnStatus.autoConnect) {
+            root._autoSuppressKey = ""; // fresh start when auto is re-enabled
             root.refresh(); // re-evaluate immediately so it acts on the current network
+        }
     }
 
     Process {
@@ -379,7 +403,7 @@ Singleton {
             return root.vpnProfiles.map(p => `${p.name} [${p.type}]${root.activeVpnNames.indexOf(p.name) !== -1 ? " *active" : ""}${p.autoconnect ? " auto" : ""}`).join("\n");
         }
         function status(): string {
-            return `ssid=${root.ssid} vpn=${root.vpnUp ? root.vpnName : "down"} target=${root.toggleTarget} trusted=${root.trusted} auto=${Config.options.vpnStatus.autoConnect} ip=${root.localIp} pub=${root.publicIp}`;
+            return `ssid=${root.ssid} vpn=${root.vpnUp ? root.vpnName : "down"} target=${root.toggleTarget} trusted=${root.trusted} auto=${Config.options.vpnStatus.autoConnect} suppress=${root._autoSuppressKey.length > 0 ? root._autoSuppressKey : "-"} ip=${root.localIp} pub=${root.publicIp}`;
         }
     }
 }

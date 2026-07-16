@@ -16,6 +16,10 @@ jq                      # misc JSON in helper scripts
 networkmanager-openvpn   # VPN manager: import/connect .ovpn (OpenVPN) profiles via nmcli
 openvpn                 # VPN manager: OpenVPN backend for the above
 wireguard-tools         # VPN manager: WireGuard tooling (nmcli imports .conf natively)
+dnsmasq                 # Wi-Fi hotspot: NM's ipv4.method=shared spawns dnsmasq for DHCP/DNS on
+                        #   the AP subnet — without the binary the AP starts but IP config fails.
+                        #   (Do NOT enable dnsmasq.service; NM runs its own bound to the AP iface.)
+qrencode                # Wi-Fi hotspot: renders the WIFI: join QR a phone camera can scan
 
 # --- optional: security / recon launcher (Super+Alt+P). AUR / BlackArch ---
 # (skip these on a plain clone if you don't use the recon launcher)
